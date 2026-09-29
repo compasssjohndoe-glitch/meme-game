@@ -1,0 +1,5522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>😂 Meme Adventure</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    margin:0;
+    background:#0c110d;
+    color:white;
+    font-family:monospace;
+    text-align:center;
+}
+
+.screen{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.panel{
+    width:760px;
+    max-width:92%;
+    padding:30px;
+    background:#202820;
+    border:4px solid white;
+    box-shadow:8px 8px #000;
+}
+
+h1{
+    font-size:42px;
+    color:#70df68;
+    text-shadow:4px 4px #000;
+}
+
+h2{
+    color:#ffd83d;
+}
+
+button{
+    display:block;
+    width:80%;
+    margin:10px auto;
+    padding:13px;
+    background:#333;
+    color:white;
+    border:3px solid white;
+    font:17px monospace;
+    cursor:pointer;
+    box-shadow:5px 5px #000;
+}
+
+button:hover{
+    background:#555;
+    transform:translate(-2px,-2px);
+}
+
+button:disabled{
+    opacity:.35;
+}
+
+
+.character-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:15px;
+    margin:18px 0;
+}
+.character-card{
+    background:#171d17;
+    border:3px solid #777;
+    padding:18px 10px;
+    box-shadow:5px 5px #000;
+}
+.character-card.selected{
+    border-color:#ffd83d;
+    box-shadow:5px 5px #8b6500;
+}
+.character-icon{
+    font-size:46px;
+    margin-bottom:8px;
+}
+.character-name{
+    color:#70df68;
+    font-size:20px;
+    font-weight:bold;
+}
+.character-stats{
+    color:#ccc;
+    font-size:13px;
+    line-height:1.6;
+    margin:8px 0 14px;
+}
+.character-card button{
+    width:100%;
+    margin:0;
+}
+@media(max-width:600px){
+    .character-grid{grid-template-columns:1fr;}
+}
+
+.level-grid,
+.shop-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+
+.level-grid button,
+.shop-grid button{
+    width:100%;
+    margin:0;
+}
+
+.small{
+    color:#aaa;
+}
+
+#playerHPBar{display:none;width:900px;max-width:95%;height:24px;margin:10px auto;background:#222;border:3px solid white;box-shadow:4px 4px #000;position:relative;}
+#playerHPFill{height:100%;width:100%;background:#39e75f;transition:width .1s linear;}
+#playerHPText{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:bold;text-shadow:2px 2px #000;}
+
+#hud{
+    display:none;
+    width:900px;
+    max-width:95%;
+    margin:10px auto;
+    justify-content:center;
+    gap:7px;
+    flex-wrap:wrap;
+}
+
+.hudBox{
+    background:#222;
+    border:2px solid white;
+    padding:7px 11px;
+}
+
+canvas{
+    display:none;
+    margin:auto;
+    border:4px solid white;
+    background:#19351d;
+    image-rendering:pixelated;
+    max-width:95vw;
+}
+
+#controls{
+    display:none;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:7px;
+    margin:10px auto;
+}
+
+.skill{
+    width:auto;
+    margin:0;
+    padding:9px 12px;
+}
+
+
+
+/* ================= MOBILE JOYSTICK ================= */
+#joystick{
+    display:none;
+    position:fixed;
+    left:22px;
+    bottom:90px;
+    width:145px;
+    height:145px;
+    z-index:80;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+}
+#joystickBase{
+    position:absolute;
+    inset:0;
+    border:4px solid rgba(255,255,255,.55);
+    border-radius:50%;
+    background:rgba(20,30,20,.55);
+    box-shadow:0 0 0 4px rgba(0,0,0,.3) inset, 5px 5px 0 #000;
+}
+#joystickKnob{
+    position:absolute;
+    width:62px;
+    height:62px;
+    left:41.5px;
+    top:41.5px;
+    border:4px solid white;
+    border-radius:50%;
+    background:rgba(112,223,104,.9);
+    box-shadow:4px 4px 0 #000;
+    transform:translate(0,0);
+    pointer-events:none;
+}
+@media (max-width:800px), (pointer:coarse){
+    #joystick.active{display:block;}
+    #controls{padding-bottom:8px;}
+    .skill{min-width:74px;}
+}
+
+#message{
+    display:none;
+    position:fixed;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#111;
+    border:3px solid white;
+    padding:12px 20px;
+    z-index:50;
+}
+
+#overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    justify-content:center;
+    align-items:center;
+    z-index:100;
+}
+
+.overlayBox{
+    width:500px;
+    max-width:90%;
+    background:#222;
+    border:4px solid white;
+    padding:30px;
+}
+
+@media(max-width:600px){
+    h1{font-size:28px}
+    .level-grid,
+    .shop-grid{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= MENU ================= -->
+
+<div id="mainMenu" class="screen">
+<div class="panel">
+
+<h1>😂 MEME<br>ADVENTURE</h1>
+
+<p>⚔️ PIXEL RPG — HARD MODE</p>
+
+<p>
+🪙 Koin:
+<span id="menuCoins">0</span>
+</p>
+
+<button onclick="showCharacterMenu()">
+▶ MULAI GAME
+</button>
+
+<button onclick="showCharacterMenu()">
+😂 PILIH KARAKTER
+</button>
+
+<button onclick="showLevelMenu()">
+🗺️ PILIH LEVEL
+</button>
+
+<button onclick="showShop()">
+🛒 TOKO
+</button>
+
+</div>
+</div>
+
+
+
+<!-- ================= CHARACTER MENU ================= -->
+<div id="characterMenu" class="screen" style="display:none">
+<div class="panel">
+<h2>😂 PILIH KARAKTER</h2>
+<p class="small">Pilih karakter yang mau kamu pakai.</p>
+
+<div class="character-grid">
+
+<div class="character-card selected" id="characterCard0">
+    <div class="character-icon">🧍</div>
+    <div class="character-name">WOWO</div>
+    <div class="character-stats">
+        ❤️ HP 100<br>
+        ⚔️ Damage 35<br>
+        👟 Speed 2.7<br><br>
+        🌴 Sawit · 🍱 MBG · 🕺 Joget
+    </div>
+    <button onclick="selectCharacter(0)">✅ PILIH WOWO</button>
+</div>
+
+<div class="character-card" id="characterCard1">
+    <div class="character-icon">🔮</div>
+    <div class="character-name">DUKUN</div>
+    <div class="character-stats">
+        ❤️ HP 40<br>
+        👟 Speed sama seperti Wowo<br><br>
+        👹 Tuyul · 👻 Jin Seta · 🛡️ Ilmu Abadi
+    </div>
+    <button onclick="selectCharacter(1)">🔮 PILIH DUKUN</button>
+</div>
+
+</div>
+
+<p>Karakter aktif: <b id="selectedCharacterText">🧍 WOWO</b></p>
+<button onclick="showMainMenu()">⬅ KEMBALI</button>
+</div>
+</div>
+
+<!-- ================= LEVEL MENU ================= -->
+
+<div id="levelMenu" class="screen" style="display:none">
+
+<div class="panel">
+
+<h2>🗺️ PILIH LEVEL</h2>
+
+<p>
+Level terbuka:
+<span id="unlockText">1</span>
+</p>
+
+<div id="levelGrid" class="level-grid"></div>
+
+<button onclick="showMainMenu()">
+⬅ KEMBALI
+</button>
+
+</div>
+</div>
+
+
+<!-- ================= SHOP ================= -->
+
+<div id="shopMenu" class="screen" style="display:none">
+
+<div class="panel">
+
+<h2>🛒 TOKO</h2>
+
+<h3>
+🪙 <span id="shopCoins">0</span>
+</h3>
+
+<div class="shop-grid">
+
+<button onclick="buyUpgrade('hp')">
+❤️ HP +20<br>
+<span id="hpPrice"></span>
+</button>
+
+<button onclick="buyUpgrade('damage')">
+⚔️ DAMAGE +5<br>
+<span id="damagePrice"></span>
+</button>
+
+<button onclick="buyUpgrade('speed')">
+👟 SPEED +0.3<br>
+<span id="speedPrice"></span>
+</button>
+
+<button onclick="buyUpgrade('heal')">
+🍱 HEAL +8<br>
+<span id="healPrice"></span>
+</button>
+
+</div>
+
+<p id="shopStats"></p>
+
+<button onclick="showMainMenu()">
+⬅ KEMBALI
+</button>
+
+</div>
+</div>
+
+
+<!-- ================= HP BAR ================= -->
+<div id="playerHPBar"><div id="playerHPFill"></div><div id="playerHPText">100 / 100 HP</div></div>
+
+<!-- ================= HUD ================= -->
+
+<div id="hud">
+
+<div class="hudBox">
+❤️ <span id="hpText">100/100</span>
+</div>
+
+<div class="hudBox">
+⭐ LV <span id="levelText">1</span>
+</div>
+
+<div class="hudBox">
+XP <span id="xpText">0/100</span>
+</div>
+
+<div class="hudBox">
+🪙 <span id="coinText">0</span>
+</div>
+
+<div class="hudBox">
+🎯 <span id="stageText">Level 1</span>
+</div>
+
+</div>
+
+
+<canvas id="game" width="900" height="500"></canvas>
+
+
+
+
+<!-- ================= MOBILE JOYSTICK ================= -->
+<div id="joystick" aria-label="Joystick gerak">
+    <div id="joystickBase"></div>
+    <div id="joystickKnob"></div>
+</div>
+
+
+<!-- ================= SKILLS ================= -->
+
+<div id="controls">
+
+<button class="skill" id="skillButton1" onclick="selectedCharacter===1?useDukunSkill(1):useSkill(1)">
+<span id="skillName1">🌴 SAWIT</span>
+<br>
+<span id="cd1">READY</span>
+</button>
+
+<button class="skill" id="skillButton2" onclick="selectedCharacter===1?useDukunSkill(2):useSkill(2)">
+<span id="skillName2">🍱 MBG</span>
+<br>
+<span id="cd2">READY</span>
+</button>
+
+<button class="skill" id="skillButton3" onclick="selectedCharacter===1?useDukunSkill(3):useSkill(3)">
+<span id="skillName3">🕺 JOGET</span>
+<br>
+<span id="cd3">READY</span>
+</button>
+
+<button class="skill" onclick="backToMenu()">
+🏠 MENU
+</button>
+
+</div>
+
+
+<div id="message"></div>
+
+
+<!-- ================= OVERLAY ================= -->
+
+<div id="overlay">
+
+<div class="overlayBox">
+
+<h2 id="overlayTitle"></h2>
+
+<p id="overlayText"></p>
+
+<button id="overlayButton1"></button>
+<button id="overlayButton2"></button>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ==================================================
+                    SAVE
+================================================== */
+
+let saveData =
+JSON.parse(
+localStorage.getItem("prabowoAdventureSave")
+) || {
+
+    coins:0,
+    unlockedLevel:1,
+
+    hpUpgrade:0,
+    damageUpgrade:0,
+    speedUpgrade:0,
+    healUpgrade:0
+};
+
+function saveGame(){
+
+    localStorage.setItem(
+        "prabowoAdventureSave",
+        JSON.stringify(saveData)
+    );
+
+}
+
+
+/* ==================================================
+                    LEVEL DATA
+================================================== */
+
+const levels=[
+
+{ name:"Perkebunan Sawit", enemies:["grunt","grunt","runner","grunt"], boss:false },
+{ name:"Kota", enemies:["grunt","runner","crawler","runner","grunt"], boss:false },
+{ name:"Pasar Makhluk", enemies:["crawler","runner","crawler","tank","grunt","crawler"], boss:false },
+{ name:"Danau Lele", enemies:["lele","grunt","runner","lele","tank","lele"], boss:false },
+{ name:"Hutan Aneh", enemies:["crawler","lele","runner","tank","crawler","lele","runner"], boss:false },
+{ name:"Kampung Pocong", enemies:["pocong","crawler","lele","pocong","tank","runner"], boss:false },
+{ name:"Kota Terbalik", enemies:["pocong","robot","lele","tank","pocong","crawler","runner"], boss:false },
+{ name:"Lembah Golem", enemies:["golem","pocong","tank","lele","golem","runner"], boss:false },
+{ name:"Kerajaan Makhluk", enemies:["golem","pocong","robot","golem","lele","tank","pocong","runner"], boss:false },
+{ name:"Istana Raja Sawit", enemies:["golem","robot","pocong","tank","robot","golem","runner","lele"], boss:true }
+
+];
+
+
+/* ==================================================
+                    ENEMY TYPES
+================================================== */
+
+const enemyTypes={
+
+grunt:{
+    name:"Preman Sawit",
+    hp:85,
+    damage:11,
+    speed:1.25,
+    coin:10,
+    xp:20,
+    size:30
+},
+
+runner:{
+    name:"Pelari Sawit",
+    hp:70,
+    damage:15,
+    speed:2.35,
+    coin:15,
+    xp:25,
+    size:25
+},
+
+tank:{
+    name:"Tank MBG",
+    hp:220,
+    damage:27,
+    speed:.72,
+    coin:30,
+    xp:50,
+    size:42
+},
+
+boss:{
+    name:"RAJA SAWIT",
+    hp:900,
+    damage:38,
+    speed:.82,
+    coin:200,
+    xp:300,
+    size:60
+}
+,
+
+robot:{
+    name:"ROBOT MISSILE",
+    hp:260,
+    damage:20,
+    speed:.55,
+    coin:45,
+    xp:70,
+    size:44
+},
+
+crawler:{
+    name:"KECOAK RAKSASA",
+    hp:115,
+    damage:5,
+    speed:9,
+
+    coin:18,
+    xp:30,
+    size:28
+},
+
+lele:{
+    name:"LELE MUTAN",
+    hp:145,
+    damage:35,
+    speed:1.05,
+    coin:24,
+    xp:40,
+    size:34
+},
+
+pocong:{
+    name:"POCONG WIFI",
+    hp:190,
+    damage:5,
+    speed:1.35,
+    coin:32,
+    xp:55,
+    size:36
+},
+
+golem:{
+    name:"GOLEM MBG",
+    hp:360,
+    damage:25,
+    speed:.32,
+    coin:60,
+    xp:90,
+    size:56
+}
+
+};
+
+
+/* ==================================================
+                    PLAYER
+================================================== */
+
+const player={
+
+x:150,
+y:250,
+
+size:30,
+
+hp:100,
+maxHp:100,
+
+damage:35,
+
+speed:2.7,
+
+level:1,
+
+xp:0,
+xpNeeded:100,
+
+healPower:25,
+
+invincible:0,
+
+skillCD1:0,
+skillCD2:0,
+skillCD3:0,
+
+/* efek racun */
+
+poisonTimer:0,
+poisonDamageTimer:0,
+
+/* slow */
+
+slowTimer:0,
+
+knockbackX:0,
+knockbackY:0,
+knockbackTimer:0
+
+};
+
+
+/* ==================================================
+                    GAME VARIABLES
+================================================== */
+
+const canvas=
+document.getElementById("game");
+
+const ctx=
+canvas.getContext("2d");
+
+let enemies=[];
+let projectiles=[];
+let effects=[];
+let particles=[];
+let poisonZones=[];
+
+let currentLevel=1;
+
+let gameRunning=false;
+let levelFinished=false;
+
+let animationTime=0;
+
+let keys={};
+
+let bossPhase=1;
+let bossAttackTimer=100;
+
+
+/* ==================================================
+                    AUDIO
+================================================== */
+
+let audioContext=null;
+
+function initAudio(){
+
+if(!audioContext){
+
+audioContext=
+new (
+window.AudioContext ||
+window.webkitAudioContext
+)();
+
+}
+
+}
+
+
+/* Suara sederhana */
+
+function beep(
+frequency,
+duration,
+type="square",
+volume=.08
+){
+
+initAudio();
+
+const osc=
+audioContext.createOscillator();
+
+const gain=
+audioContext.createGain();
+
+osc.type=type;
+
+osc.frequency.value=frequency;
+
+gain.gain.value=volume;
+
+osc.connect(gain);
+gain.connect(audioContext.destination);
+
+osc.start();
+
+gain.gain.exponentialRampToValueAtTime(
+.001,
+audioContext.currentTime+duration
+);
+
+osc.stop(
+audioContext.currentTime+duration
+);
+
+}
+
+
+/* ==================================================
+              RAJA TERIAK MBG
+================================================== */
+
+function bossVoice(){
+
+initAudio();
+
+/*
+    Suara sintetis seperti teriakan.
+*/
+
+const now=
+audioContext.currentTime;
+
+const osc=
+audioContext.createOscillator();
+
+const gain=
+audioContext.createGain();
+
+osc.type="sawtooth";
+
+osc.frequency.setValueAtTime(
+180,
+now
+);
+
+osc.frequency.exponentialRampToValueAtTime(
+70,
+now+.45
+);
+
+gain.gain.setValueAtTime(
+.18,
+now
+);
+
+gain.gain.exponentialRampToValueAtTime(
+.001,
+now+.55
+);
+
+osc.connect(gain);
+gain.connect(audioContext.destination);
+
+osc.start(now);
+osc.stop(now+.55);
+
+
+/* bunyi tambahan */
+
+setTimeout(()=>{
+beep(100,.12,"square",.08);
+},150);
+
+}
+
+
+/* ==================================================
+                    INPUT
+================================================== */
+
+document.addEventListener(
+"keydown",
+e=>{
+
+keys[e.key.toLowerCase()]=true;
+
+if(selectedCharacter!==1){
+    if(e.key==="1") useSkill(1);
+    if(e.key==="2") useSkill(2);
+    if(e.key==="3") useSkill(3);
+}
+
+if(selectedCharacter===1){
+    if(e.key==="1") useDukunSkill(1);
+    if(e.key==="2") useDukunSkill(2);
+    if(e.key==="3") useDukunSkill(3);
+}
+
+}
+);
+
+document.addEventListener(
+"keyup",
+e=>{
+
+keys[e.key.toLowerCase()]=false;
+
+}
+);
+
+
+
+
+/* ==================================================
+                 MOBILE JOYSTICK
+================================================== */
+
+const joystick=document.getElementById("joystick");
+const joystickKnob=document.getElementById("joystickKnob");
+
+let joystickPointerId=null;
+let joyX=0;
+let joyY=0;
+
+function joystickSupported(){
+    return window.matchMedia("(max-width:800px), (pointer:coarse)").matches;
+}
+
+function setJoystickVisible(show){
+    if(!joystick) return;
+    joystick.classList.toggle("active", !!show && joystickSupported());
+    if(!show) resetJoystick();
+}
+
+function resetJoystick(){
+    joyX=0;
+    joyY=0;
+    joystickPointerId=null;
+    if(joystickKnob){
+        joystickKnob.style.transform="translate(0px, 0px)";
+    }
+}
+
+function updateJoystick(clientX,clientY){
+    const r=joystick.getBoundingClientRect();
+    const cx=r.left+r.width/2;
+    const cy=r.top+r.height/2;
+    let dx=clientX-cx;
+    let dy=clientY-cy;
+    const max=50;
+    const dist=Math.hypot(dx,dy);
+    if(dist>max){
+        dx=dx/dist*max;
+        dy=dy/dist*max;
+    }
+    joyX=dx/max;
+    joyY=dy/max;
+    joystickKnob.style.transform=`translate(${dx}px, ${dy}px)`;
+}
+
+if(joystick){
+    joystick.addEventListener("pointerdown",e=>{
+        if(!gameRunning) return;
+        joystickPointerId=e.pointerId;
+        try{joystick.setPointerCapture(e.pointerId);}catch(err){}
+        updateJoystick(e.clientX,e.clientY);
+        e.preventDefault();
+    });
+
+    joystick.addEventListener("pointermove",e=>{
+        if(e.pointerId!==joystickPointerId) return;
+        updateJoystick(e.clientX,e.clientY);
+        e.preventDefault();
+    });
+
+    const endJoystick=e=>{
+        if(e.pointerId!==joystickPointerId) return;
+        resetJoystick();
+        e.preventDefault();
+    };
+
+    joystick.addEventListener("pointerup",endJoystick);
+    joystick.addEventListener("pointercancel",endJoystick);
+    joystick.addEventListener("lostpointercapture",()=>{
+        if(joystickPointerId!==null) resetJoystick();
+    });
+}
+
+
+/* ==================================================
+                    MENU
+================================================== */
+
+function hideScreens(){
+
+document.getElementById(
+"mainMenu"
+).style.display="none";
+
+document.getElementById(
+"levelMenu"
+).style.display="none";
+
+document.getElementById(
+"characterMenu"
+).style.display="none";
+
+document.getElementById(
+"shopMenu"
+).style.display="none";
+
+}
+
+
+function showMainMenu(){
+
+gameRunning=false;
+
+document.getElementById("game")
+.style.display="none";
+
+document.getElementById("hud")
+.style.display="none";
+document.getElementById("playerHPBar")
+.style.display="none";
+
+document.getElementById("controls")
+.style.display="none";
+setJoystickVisible(false);
+
+hideScreens();
+
+document.getElementById("mainMenu")
+.style.display="flex";
+
+document.getElementById("menuCoins")
+.textContent=saveData.coins;
+
+}
+
+
+function showLevelMenu(){
+
+gameRunning=false;
+
+hideScreens();
+
+document.getElementById("levelMenu")
+.style.display="flex";
+
+createLevelButtons();
+
+}
+
+
+function showShop(){
+
+gameRunning=false;
+
+hideScreens();
+
+document.getElementById("shopMenu")
+.style.display="flex";
+
+updateShop();
+
+}
+
+
+
+/* ==================================================
+                    CHARACTER SELECT
+================================================== */
+
+const characters = [
+    {
+        name:"WOWO",
+        icon:"🧍",
+        hp:100,
+        damage:35,
+        speed:2.7
+    },
+    {
+        name:"DUKUN",
+        icon:"🔮",
+        hp:40,
+        damage:35,
+        speed:2.7
+    }
+];
+
+let selectedCharacter = 0;
+let dukunTuyul = null;
+let dukunInvincibleTimer = 0;
+let dukunSetaCooldown = 0;
+let dukunTuyulCooldown = 0;
+let dukunImmortalCooldown = 0;
+
+function showCharacterMenu(){
+    gameRunning=false;
+    hideScreens();
+    document.getElementById("characterMenu").style.display="flex";
+    updateCharacterMenu();
+}
+
+function selectCharacter(index){
+    selectedCharacter=index;
+    updateCharacterMenu();
+    showMessage("✅ " + characters[index].name + " dipilih!");
+}
+
+function updateSkillButtons(){
+    const names = selectedCharacter===1
+        ? ["👹 TUYUL","👻 JIN SETA","🛡️ ILMU ABADI"]
+        : ["🌴 SAWIT","🍱 MBG","🕺 JOGET"];
+
+    const a=document.getElementById("skillName1");
+    const b=document.getElementById("skillName2");
+    const c=document.getElementById("skillName3");
+
+    if(a) a.textContent=names[0];
+    if(b) b.textContent=names[1];
+    if(c) c.textContent=names[2];
+}
+
+function updateCharacterMenu(){
+    updateSkillButtons();
+    characters.forEach((character,i)=>{
+        const card=document.getElementById("characterCard"+i);
+        if(card) card.classList.toggle("selected",i===selectedCharacter);
+    });
+
+    const c=characters[selectedCharacter];
+    const text=document.getElementById("selectedCharacterText");
+    if(text) text.textContent=c.icon+" "+c.name;
+}
+
+
+/* ==================================================
+                    LEVEL SELECT
+================================================== */
+
+function createLevelButtons(){
+
+const grid=
+document.getElementById("levelGrid");
+
+grid.innerHTML="";
+
+document.getElementById(
+"unlockText"
+).textContent=
+saveData.unlockedLevel;
+
+levels.forEach((level,i)=>{
+
+const number=i+1;
+
+const button=
+document.createElement("button");
+
+if(
+number<=saveData.unlockedLevel
+){
+
+button.innerHTML=
+`▶ LEVEL ${number}<br>
+<span class="small">
+${level.name}
+</span>`;
+
+button.onclick=
+()=>startLevel(number);
+
+}else{
+
+button.disabled=true;
+
+button.innerHTML=
+`🔒 LEVEL ${number}<br>
+<span class="small">
+${level.name}
+</span>`;
+
+}
+
+grid.appendChild(button);
+
+});
+
+}
+
+
+
+/* ==================================================
+                    DUKUN / TUYUL / SETA
+================================================== */
+
+function resetDukunSummons(){
+    dukunTuyul = null;
+    dukunInvincibleTimer = 0;
+    dukunSetaCooldown = 0;
+    dukunTuyulCooldown = 0;
+    dukunImmortalCooldown = 0;
+}
+
+function summonTuyul(){
+    if(selectedCharacter!==1 || !gameRunning) return;
+    if(dukunTuyul || dukunTuyulCooldown>0) return;
+
+    dukunTuyul = {
+        x:player.x,
+        y:player.y,
+        size:22,
+        stealCooldown:0,
+        walk:0,
+        alive:true
+    };
+
+    dukunTuyulCooldown=30;
+    showMessage("👹 TUYUL DIPANGGIL!");
+    beep(220,.12,"square",.06);
+}
+
+function summonSeta(){
+    if(selectedCharacter!==1 || !gameRunning) return;
+    if(dukunSetaCooldown>0) return;
+
+    const target = enemies
+        .filter(e=>e.alive && !e.isSummon && e.type!=="seta")
+        .sort((a,b)=>b.hp-a.hp)[0]
+        || enemies.find(e=>e.alive && !e.isSummon);
+
+    if(!target){
+        showMessage("👻 TIDAK ADA TARGET!");
+        return;
+    }
+
+    /* Seta hidup 850 HP dan melakukan teleport-ledak.
+       Karena dia adalah summon sekali pakai, setelah ledakan
+       cooldown dimulai 10 detik. */
+    const seta = {
+        x:player.x,
+        y:player.y,
+        target:target,
+        hp:850,
+        maxHp:850,
+        damage:50,
+        timer:0,
+        exploding:false,
+        alive:true
+    };
+
+    enemies.push({
+        type:"seta",
+        name:"JIN KHODAM SETA",
+        x:seta.x,
+        y:seta.y,
+        size:58,
+        hp:seta.hp,
+        maxHp:seta.maxHp,
+        damage:seta.damage,
+        speed:0,
+        coin:0,
+        xp:0,
+        attackCooldown:0,
+        dashCooldown:0,
+        missileCooldown:0,
+        chargeCooldown:0,
+        charging:false,
+        hitFlash:0,
+        alive:true,
+        isSummon:true,
+        target:target,
+        introTimer:60,
+        flashTimer:60,
+        explosionCount:0,
+        explosionTimer:0,
+        targetLocked:false
+    });
+
+    dukunSetaCooldown=0;
+    showMessage("👻👻 JIN KHODAM SETA TURUN! 850 HP — 50 DMG!");
+    beep(90,.18,"sawtooth",.08);
+}
+
+function useDukunSkill(skill){
+    if(selectedCharacter!==1 || !gameRunning) return;
+
+    if(skill===1){
+        summonTuyul();
+    }else if(skill===2){
+        summonSeta();
+    }else if(skill===3){
+        if(dukunInvincibleTimer>0 || dukunImmortalCooldown>0){
+            showMessage("🛡️ ILMU ABADI BELUM READY!");
+            return;
+        }
+        dukunInvincibleTimer=300; /* 5 detik @ 60 FPS */
+        dukunImmortalCooldown=1200; /* 20 detik @ 60 FPS */
+        showMessage("🛡️ DUKUN MENJADI ABADI 5 DETIK!");
+        createEffect(player.x,player.y,"dukunImmortal");
+        createParticles(player.x,player.y,"#a85cff",30);
+        beep(520,.2,"sine",.09);
+    }
+}
+
+function updateDukun(){
+    if(selectedCharacter!==1) return;
+
+    if(dukunInvincibleTimer>0) dukunInvincibleTimer--;
+    if(dukunSetaCooldown>0) dukunSetaCooldown--;
+    if(dukunTuyulCooldown>0) dukunTuyulCooldown--;
+    if(dukunImmortalCooldown>0) dukunImmortalCooldown--;
+
+    if(!dukunTuyul) return;
+
+    dukunTuyul.walk += .18;
+
+    /* Tuyul mengejar musuh terdekat dengan speed sama player. */
+    const target = enemies
+        .filter(e=>e.alive && e.type!=="seta" && !e.isSummon)
+        .sort((a,b)=>
+            Math.hypot(a.x-dukunTuyul.x,a.y-dukunTuyul.y) -
+            Math.hypot(b.x-dukunTuyul.x,b.y-dukunTuyul.y)
+        )[0];
+
+    if(!target) return;
+
+    const dx=target.x-dukunTuyul.x;
+    const dy=target.y-dukunTuyul.y;
+    const dist=Math.hypot(dx,dy);
+
+    if(dist>30){
+        dukunTuyul.x += dx/dist*player.speed;
+        dukunTuyul.y += dy/dist*player.speed;
+    }else{
+        if(dukunTuyul.stealCooldown>0){
+            dukunTuyul.stealCooldown--;
+        }else{
+            const oldHp=target.hp;
+            target.hp=Math.max(0,target.hp-90);
+            const healed=Math.min(20,player.maxHp-player.hp);
+            player.hp+=healed;
+
+            dukunTuyul.stealCooldown=55;
+            target.hitFlash=12;
+
+            createEffect(target.x,target.y,"tuyulSteal");
+            createParticles(target.x,target.y,"#ff4fd8",24);
+            createParticles(dukunTuyul.x,dukunTuyul.y,"#55ff88",18);
+
+            effects.push({x:target.x,y:target.y-30,type:"tuyulText",life:45,radius:0,amount:Math.min(90,oldHp)});
+            effects.push({x:dukunTuyul.x,y:dukunTuyul.y-30,type:"tuyulHealText",life:45,radius:0,amount:healed});
+
+            showMessage(`👹 TUYUL NYOLONG ${Math.min(90,oldHp)} HP! DUKUN +${healed} HP!`);
+
+            if(target.hp<=0){
+                killEnemy(target);
+            }
+        }
+    }
+}
+
+function drawTuyul(){
+    if(!dukunTuyul) return;
+
+    const x=dukunTuyul.x;
+    const y=dukunTuyul.y;
+    const bob=Math.sin(dukunTuyul.walk)*3;
+
+    ctx.save();
+    ctx.translate(x,y+bob);
+
+    ctx.fillStyle="rgba(0,0,0,.35)";
+    ctx.fillRect(-13,16,26,5);
+
+    ctx.fillStyle="#a7d9a0";
+    ctx.fillRect(-15,-20,30,34);
+
+    ctx.fillStyle="#bcebb4";
+    ctx.fillRect(-16,-35,32,21);
+
+    /* telinga */
+    ctx.fillStyle="#9bcf95";
+    ctx.fillRect(-22,-33,8,15);
+    ctx.fillRect(14,-33,8,15);
+
+    /* rambut */
+    ctx.fillStyle="#222";
+    ctx.fillRect(-16,-39,32,7);
+
+    /* mata */
+    ctx.fillStyle="#ff2222";
+    ctx.fillRect(-9,-27,5,5);
+    ctx.fillRect(4,-27,5,5);
+
+    /* kaki kecil */
+    const step=Math.sin(dukunTuyul.walk)*4;
+    ctx.fillStyle="#222";
+    ctx.fillRect(-10+step,12,7,13);
+    ctx.fillRect(3-step,12,7,13);
+
+    ctx.restore();
+
+    ctx.save();
+    ctx.textAlign="center";
+    ctx.font="bold 11px monospace";
+    ctx.strokeStyle="#000";
+    ctx.lineWidth=3;
+    ctx.strokeText("👹 TUYUL • NYOLONG HP",x,y-50);
+    ctx.fillStyle="#55ff88";
+    ctx.fillText("👹 TUYUL • NYOLONG HP",x,y-50);
+    ctx.restore();
+}
+
+function drawSeta(e){
+    const x=e.x, y=e.y;
+    const pulse=1+Math.sin(animationTime*6)*.08;
+    const r=58*pulse;
+    ctx.save();
+
+    /* spotlight / aura */
+    ctx.globalAlpha=.16;
+    ctx.fillStyle="#d56cff";
+    ctx.beginPath();
+    ctx.arc(x,y,r+45+Math.sin(animationTime*5)*10,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.globalAlpha=.9;
+    ctx.strokeStyle="#f0a0ff";
+    ctx.lineWidth=5;
+    ctx.beginPath();
+    ctx.arc(x,y,r+12,0,Math.PI*2);
+    ctx.stroke();
+
+    /* badan besar */
+    ctx.globalAlpha=1;
+    ctx.fillStyle="#eee";
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="#5b1a7d";
+    ctx.fillRect(x-r*.72,y-r*.15,r*1.44,r*.85);
+
+    /* mata menyala */
+    ctx.fillStyle="#ff2222";
+    ctx.fillRect(x-r*.42,y-r*.18,r*.22,r*.18);
+    ctx.fillRect(x+r*.20,y-r*.18,r*.22,r*.18);
+
+    ctx.fillStyle="#222";
+    ctx.fillRect(x-r*.45,y+r*.35,r*.9,r*.13);
+
+    /* mahkota */
+    ctx.fillStyle="#ffd83d";
+    ctx.beginPath();
+    ctx.moveTo(x-r*.55,y-r*.78);
+    ctx.lineTo(x-r*.25,y-r*1.12);
+    ctx.lineTo(x,y-r*.82);
+    ctx.lineTo(x+r*.25,y-r*1.12);
+    ctx.lineTo(x+r*.55,y-r*.78);
+    ctx.closePath();
+    ctx.fill();
+
+    /* label */
+    ctx.textAlign="center";
+    ctx.font="bold 18px monospace";
+    ctx.strokeStyle="#000";
+    ctx.lineWidth=5;
+    ctx.strokeText("👻 JIN KHODAM SETA",x,y-r-30);
+    ctx.fillStyle="#fff";
+    ctx.fillText("👻 JIN KHODAM SETA",x,y-r-30);
+
+    ctx.font="bold 12px monospace";
+    ctx.fillStyle="#ffd83d";
+    ctx.fillText("850 HP • TARGET TERKUAT",x,y+r+28);
+
+    ctx.restore();
+
+    /* HP bar Seta */
+    drawEnemyHP(e,"👻 SETA");
+}
+
+
+/* ==================================================
+                    START LEVEL
+================================================== */
+
+function startLevel(number){
+
+initAudio();
+
+currentLevel=number;
+
+const data=
+levels[number-1];
+
+enemies=[];
+projectiles=[];
+effects=[];
+particles=[];
+poisonZones=[];
+
+player.x=150;
+player.y=250;
+
+const character=characters[selectedCharacter];
+
+player.maxHp=
+selectedCharacter===1
+?40
+:character.hp+saveData.hpUpgrade*20;
+
+player.hp=
+player.maxHp;
+
+player.damage=
+character.damage+
+saveData.damageUpgrade*5;
+
+player.speed=
+character.speed+
+saveData.speedUpgrade*.3;
+
+player.healPower=
+25+
+saveData.healUpgrade*8;
+
+player.level=1;
+player.xp=0;
+player.xpNeeded=100;
+
+player.skillCD1=0;
+player.skillCD2=0;
+player.skillCD3=0;
+
+player.poisonTimer=0;
+player.poisonDamageTimer=0;
+player.slowTimer=0;
+player.knockbackX=0;
+player.knockbackY=0;
+player.knockbackTimer=0;
+
+bossPhase=1;
+bossAttackTimer=100;
+
+levelFinished=false;
+resetDukunSummons();
+
+hideScreens();
+
+document.getElementById("game")
+.style.display="block";
+
+document.getElementById("hud")
+.style.display="flex";
+document.getElementById("playerHPBar")
+.style.display="block";
+
+document.getElementById("controls")
+.style.display="flex";
+setJoystickVisible(true);
+
+data.enemies.forEach(type=>{
+spawnEnemy(type);
+});
+
+if(data.boss){
+
+    spawnEnemy("boss");
+
+    const boss=enemies[enemies.length-1];
+
+    /* Raja Sawit selalu muncul di arena,
+       bukan nyangkut di pinggir layar. */
+    boss.x=720;
+    boss.y=270;
+
+    /* beri ruang khusus untuk Raja Sawit */
+    enemies.forEach(enemy=>{
+        if(enemy!==boss && Math.hypot(enemy.x-boss.x,enemy.y-boss.y)<150){
+            enemy.x=Math.max(40,enemy.x-180);
+        }
+    });
+}
+
+gameRunning=true;
+
+}
+
+
+/* ==================================================
+                    SPAWN ENEMY
+================================================== */
+
+function spawnEnemy(type){
+
+const d=
+enemyTypes[type];
+
+let x;
+let y;
+
+if(Math.random()<.5){
+
+x=
+Math.random()<.5
+?30
+:870;
+
+y=
+Math.random()*500;
+
+}else{
+
+x=
+Math.random()*900;
+
+y=
+Math.random()<.5
+?30
+:470;
+
+}
+
+const scale=
+1+(currentLevel-1)*.15;
+
+enemies.push({
+
+type:type,
+
+x:x,
+y:y,
+
+size:d.size,
+
+hp:d.hp*scale,
+maxHp:d.hp*scale,
+
+damage:d.damage*scale,
+
+speed:d.speed,
+
+coin:d.coin,
+xp:d.xp,
+
+attackCooldown:0,
+dashCooldown:100,
+missileCooldown:type==="robot"?420:0,
+
+/* animasi jalan */
+walkFrame:Math.random()*Math.PI*2,
+walkPhase:Math.random()*Math.PI*2,
+
+/* Tank MBG charge */
+chargeCooldown:type==="tank"?300:0,
+charging:false,
+chargeTimer:0,
+chargeVX:0,
+chargeVY:0,
+
+/* Golem MBG: geprek tanah */
+slamCooldown:type==="golem"?240:0,
+slamTimer:0,
+slamActive:false,
+
+hitFlash:0,
+
+alive:true
+
+});
+
+}
+
+
+/* ==================================================
+                    UPDATE
+================================================== */
+
+function update(){
+
+if(!gameRunning)
+return;
+
+animationTime+=.15;
+
+movePlayer();
+
+updateDukun();
+
+updateEnemies();
+
+updateProjectiles();
+
+updatePoisonZones();
+
+updateEffects();
+
+updateParticles();
+
+if(player.invincible>0)
+player.invincible--;
+
+if(player.skillCD1>0)
+player.skillCD1--;
+
+if(player.skillCD2>0)
+player.skillCD2--;
+
+if(player.skillCD3>0)
+player.skillCD3--;
+
+updateUI();
+
+updateSkillUI();
+
+checkLevelComplete();
+
+}
+
+
+/* ==================================================
+                    PLAYER MOVEMENT
+================================================== */
+
+function movePlayer(){
+
+if(player.knockbackTimer>0){
+    player.x+=player.knockbackX;
+    player.y+=player.knockbackY;
+    player.knockbackX*=.84;
+    player.knockbackY*=.84;
+    player.knockbackTimer--;
+}
+
+let speed=
+player.speed;
+
+/* SLOW DARI RACUN */
+
+if(player.slowTimer>0){
+
+speed*=.48;
+
+player.slowTimer--;
+
+}
+
+/* RACUN */
+
+if(player.poisonTimer>0){
+
+player.poisonTimer--;
+
+player.poisonDamageTimer--;
+
+if(player.poisonDamageTimer<=0){
+
+hurtPlayer(3);
+
+player.poisonDamageTimer=35;
+
+}
+
+}
+
+if(joyY<-.15)
+player.y+=joyY*speed;
+
+if(joyY>.15)
+player.y+=joyY*speed;
+
+if(joyX<-.15)
+player.x+=joyX*speed;
+
+if(joyX>.15)
+player.x+=joyX*speed;
+
+if(keys["w"]||keys["arrowup"])
+player.y-=speed;
+
+if(keys["s"]||keys["arrowdown"])
+player.y+=speed;
+
+if(keys["a"]||keys["arrowleft"])
+player.x-=speed;
+
+if(keys["d"]||keys["arrowright"])
+player.x+=speed;
+
+player.x=
+Math.max(
+15,
+Math.min(
+canvas.width-15,
+player.x
+)
+);
+
+player.y=
+Math.max(
+30,
+Math.min(
+canvas.height-15,
+player.y
+)
+);
+
+}
+
+
+/* ==================================================
+                    ENEMY AI
+================================================== */
+
+function updateEnemies(){
+
+enemies.forEach(enemy=>{
+
+if(!enemy.alive)
+return;
+
+if(enemy.attackCooldown>0)
+enemy.attackCooldown--;
+
+if(enemy.hitFlash>0)
+enemy.hitFlash--;
+
+/* ANIMASI JALAN SEMUA MUSUH */
+enemy.walkFrame += 0.14 * (enemy.speed / 0.72 + 0.7);
+
+/* TANK MBG: SERUDUK SETIAP 5 DETIK */
+if(enemy.type==="seta"){
+    /* Seta muncul besar dan menjadi pusat perhatian dulu. */
+    if(enemy.flashTimer>0) enemy.flashTimer--;
+
+    if(!enemy.target || !enemy.target.alive){
+        enemy.target = enemies
+            .filter(e=>e.alive && e.type!=="seta" && !e.isSummon)
+            .sort((a,b)=>b.hp-a.hp)[0];
+    }
+
+    if(enemy.introTimer>0){
+        enemy.introTimer--;
+
+        /* Seta melayang di atas arena supaya benar-benar kelihatan. */
+        enemy.y += Math.sin(animationTime*5) * 0.7;
+
+        if(enemy.introTimer%8===0){
+            createParticles(enemy.x,enemy.y,"#d56cff",14);
+        }
+
+        if(enemy.introTimer===45 || enemy.introTimer===15){
+            showMessage("👻 SETA MENYERANG!");
+            beep(120,.08,"sawtooth",.05);
+        }
+
+        return;
+    }
+
+    /* SETA: 10 ledakan berturut-turut. */
+    if(enemy.explosionCount < 10){
+        if(enemy.explosionTimer>0){
+            enemy.explosionTimer--;
+            return;
+        }
+
+        const target =
+            enemies
+            .filter(e=>e.alive && !e.isSummon && e.type!=="seta")
+            .sort((a,b)=>b.hp-a.hp)[0];
+
+        if(!target){
+            enemy.alive=false;
+            dukunSetaCooldown=600;
+            return;
+        }
+
+        /* Setiap ledakan mengejar musuh terkuat saat itu. */
+        enemy.x=target.x;
+        enemy.y=target.y;
+
+        enemy.explosionCount++;
+
+        createEffect(enemy.x,enemy.y,"joget");
+        createParticles(enemy.x,enemy.y,"#d56cff",45);
+        createParticles(enemy.x,enemy.y,"#ffffff",25);
+
+        enemies.forEach(victim=>{
+            if(!victim.alive || victim.isSummon || victim.type==="seta") return;
+
+            const vx=victim.x-enemy.x;
+            const vy=victim.y-enemy.y;
+            const dist=Math.sqrt(vx*vx+vy*vy);
+
+            if(dist<=110){
+                victim.hp-=50;
+                victim.hitFlash=12;
+
+                createParticles(victim.x,victim.y,"#ff4cff",15);
+
+                if(victim.hp<=0){
+                    killEnemy(victim);
+                }
+            }
+        });
+
+        showMessage(
+            "💥 SETA BOOM "+enemy.explosionCount+"/10 — 50 DAMAGE!"
+        );
+        beep(80+enemy.explosionCount*18,.12,"sawtooth",.10);
+
+        enemy.explosionTimer=18;
+        return;
+    }
+
+    /* Setelah 10 ledakan, Seta selesai dan CD mulai. */
+    enemy.alive=false;
+    dukunSetaCooldown=600;
+    showMessage("👻 SETA SELESAI — 10x BOOM!");
+    createParticles(enemy.x,enemy.y,"#d56cff",35);
+    return;
+
+}
+
+if(enemy.type==="tank"){
+
+    enemy.chargeCooldown--;
+
+    /* mulai seruduk */
+    if(!enemy.charging && enemy.chargeCooldown<=0){
+
+        const chargeDX=player.x-enemy.x;
+        const chargeDY=player.y-enemy.y;
+        const chargeDist=Math.hypot(chargeDX,chargeDY);
+
+        if(chargeDist>0){
+
+            enemy.charging=true;
+            enemy.chargeTimer=55;
+            enemy.chargeVX=chargeDX/chargeDist*7.5;
+            enemy.chargeVY=chargeDY/chargeDist*7.5;
+
+            createEffect(enemy.x,enemy.y,"tankCharge");
+            showMessage("💥 TANK MBG MENYERUDUK!");
+
+        }
+
+        enemy.chargeCooldown=300;
+    }
+
+    if(enemy.charging){
+
+        enemy.x+=enemy.chargeVX;
+        enemy.y+=enemy.chargeVY;
+
+        enemy.chargeTimer--;
+
+        /* kalau nabrak player */
+        const hitDistance=Math.hypot(
+            player.x-enemy.x,
+            player.y-enemy.y
+        );
+
+        if(hitDistance<58){
+
+            const pushX=enemy.chargeVX>0?1:-1;
+            const pushY=Math.abs(enemy.chargeVY)>Math.abs(enemy.chargeVX)
+                ?(enemy.chargeVY>0?1:-1)
+                :enemy.chargeVY/7.5;
+
+            player.knockbackX=pushX*18;
+            player.knockbackY=pushY*12;
+            player.knockbackTimer=28;
+
+            hurtPlayer(enemy.damage*1.5);
+
+            createEffect(player.x,player.y,"tankHit");
+            createParticles(player.x,player.y,"#ff7a32",24);
+
+            showMessage("🚜💥 TANK MENABRAK! KAMU TERDORONG!");
+
+            enemy.charging=false;
+            enemy.chargeTimer=0;
+
+        }
+
+        /* berhenti kalau sampai ujung arena */
+        if(
+            enemy.chargeTimer<=0 ||
+            enemy.x<35 || enemy.x>865 ||
+            enemy.y<35 || enemy.y>465
+        ){
+            enemy.charging=false;
+        }
+
+        /* Tank yang sedang charge tidak melakukan AI normal */
+        if(enemy.charging)
+            return;
+    }
+
+}
+
+let dx=
+player.x-enemy.x;
+
+let dy=
+player.y-enemy.y;
+
+let distance=
+Math.sqrt(dx*dx+dy*dy);
+
+
+/* ==================================================
+                    BOSS
+================================================== */
+
+if(enemy.type==="boss"){
+
+let hpPercent=
+enemy.hp/enemy.maxHp;
+
+
+/* PHASE */
+
+if(
+hpPercent<=.65 &&
+bossPhase===1
+){
+
+bossPhase=2;
+
+showMessage(
+"👑 RAJA SAWIT: MBG!!!"
+);
+
+bossVoice();
+
+}
+
+if(
+hpPercent<=.30 &&
+bossPhase===2
+){
+
+bossPhase=3;
+
+showMessage(
+"🔥 RAJA SAWIT: MBG DARURAT!!!"
+);
+
+bossVoice();
+
+}
+
+
+/* SERANGAN */
+
+bossAttackTimer--;
+
+if(bossAttackTimer<=0){
+
+let attack=
+Math.random();
+
+if(attack<.45){
+
+bossBulletAttack();
+
+}
+else if(attack<.75){
+
+bossMBGAttack();
+
+}
+else{
+
+bossAoEAttack();
+
+}
+
+bossAttackTimer=
+bossPhase===1
+?120
+:
+bossPhase===2
+?85
+:
+50;
+
+}
+
+
+/* GERAK */
+
+if(distance>90){
+
+enemy.x+=
+(dx/distance)*enemy.speed;
+
+enemy.y+=
+(dy/distance)*enemy.speed;
+
+}
+
+if(
+distance<65 &&
+enemy.attackCooldown<=0
+){
+
+hurtPlayer(
+enemy.damage*1.3
+);
+
+enemy.attackCooldown=50;
+
+}
+
+return;
+
+}
+
+
+/* ==================================================
+                    ROBOT MISSILE
+================================================== */
+
+if(enemy.type==="robot"){
+    enemy.missileCooldown--;
+    if(enemy.missileCooldown<=0){
+        robotMissileAttack(enemy);
+        enemy.missileCooldown=420;
+    }
+}
+
+/* ==================================================
+                    GOLEM MBG — GEPREK TANAH
+================================================== */
+
+if(enemy.type==="golem"){
+
+    if(enemy.slamCooldown>0) enemy.slamCooldown--;
+
+    if(!enemy.slamActive && enemy.slamCooldown<=0 && distance<300){
+        enemy.slamActive=true;
+        enemy.slamTimer=32;
+        enemy.slamCooldown=240;
+        createEffect(enemy.x,enemy.y,"golemSlam");
+        showMessage("🗿💥 GOLEM MBG MENGEPREK TANAH!");
+        beep(75,.18,"sawtooth",.10);
+    }
+
+    if(enemy.slamActive){
+        enemy.slamTimer--;
+        if(enemy.slamTimer===12){
+            const targetX=Math.max(55,Math.min(canvas.width-55,player.x));
+            const targetY=Math.max(55,Math.min(canvas.height-55,player.y));
+            for(let i=0;i<9;i++){
+                const a=Math.PI*2*i/9;
+                const r=35+Math.random()*65;
+                projectiles.push({
+                    type:"golemRockFX", enemy:false,
+                    x:targetX+Math.cos(a)*r, y:targetY+Math.sin(a)*r,
+                    vx:0, vy:0,
+                    size:15+Math.random()*7, damage:0, life:18
+                });
+            }
+            const slamDist=160;
+            if(distance<slamDist){
+                const pushDist=Math.max(1,distance);
+                player.knockbackX=(dx/pushDist)*115;
+                player.knockbackY=(dy/pushDist)*115;
+                player.knockbackTimer=32;
+                hurtPlayer(25);
+                createParticles(player.x,player.y,"#b58b5a",28);
+                showMessage("💥 BATU MENGHANTAM! KNOCKBACK JAUH!");
+            }
+            createParticles(targetX,targetY,"#9b7650",35);
+            beep(48,.24,"sawtooth",.13);
+        }
+        if(enemy.slamTimer<=0) enemy.slamActive=false;
+        return;
+    }
+}
+
+/* ==================================================
+                    NORMAL ENEMY
+================================================== */
+
+if(distance>55){
+
+enemy.x+=
+(dx/distance)*enemy.speed;
+
+enemy.y+=
+(dy/distance)*enemy.speed;
+
+}else{
+
+if(enemy.attackCooldown<=0){
+
+hurtPlayer(
+enemy.damage
+);
+
+/* Kecoak menyerang 5 HP per detik */
+enemy.attackCooldown=
+enemy.type==="crawler"
+?60
+:enemy.type==="tank"
+?85
+:55;
+
+}
+
+}
+
+
+/* RUNNER */
+
+if(enemy.type==="runner"){
+
+enemy.dashCooldown--;
+
+if(
+enemy.dashCooldown<=0 &&
+distance<350
+){
+
+enemy.x+=
+(dx/distance)*100;
+
+enemy.y+=
+(dy/distance)*100;
+
+enemy.dashCooldown=110;
+
+createEffect(
+enemy.x,
+enemy.y,
+"dash"
+);
+
+}
+
+}
+
+
+/* MAKHLUK BARU: KECOAK RAKSASA — SUPER CEPAT */
+if(enemy.type==="crawler"){
+    enemy.dashCooldown--;
+    if(enemy.dashCooldown<=0 && distance<420){
+        enemy.x+=(dx/distance)*115;
+        enemy.y+=(dy/distance)*115;
+        enemy.dashCooldown=55;
+        createEffect(enemy.x,enemy.y,"dash");
+        createParticles(enemy.x,enemy.y,"#d58b45",10);
+    }
+}
+
+/* MAKHLUK BARU: LELE MUTAN — LASER LURUS SAMPAI MENTOK */
+if(enemy.type==="lele"){
+    enemy.missileCooldown--;
+    if(enemy.missileCooldown<=0 && distance<650 && distance>70){
+        const angle=Math.atan2(dy,dx);
+        const maxLen=Math.hypot(900,500)*1.5;
+        projectiles.push({
+            type:"fishLaser",
+            enemy:true,
+            x:enemy.x,
+            y:enemy.y,
+            angle:angle,
+            length:maxLen,
+            width:14,
+            damage:35,
+            life:4,
+            hit:false
+        });
+        createEffect(enemy.x,enemy.y,"laser");
+        showMessage("🐟⚡ LELE MENEMBAKKAN LASER!");
+        enemy.missileCooldown=210;
+    }
+}
+
+/* POCONG WIFI — teleport dan menyentuh player = 5 damage */
+if(enemy.type==="pocong"){
+    enemy.dashCooldown--;
+    if(enemy.dashCooldown<=0 && distance<380){
+        const oldX=enemy.x;
+        const oldY=enemy.y;
+        const safeDist=95;
+        const tx=player.x-dx/distance*safeDist;
+        const ty=player.y-dy/distance*safeDist;
+
+        createEffect(oldX,oldY,"wifiTeleport");
+        enemy.x=Math.max(35,Math.min(canvas.width-35,tx));
+        enemy.y=Math.max(45,Math.min(canvas.height-35,ty));
+        createEffect(enemy.x,enemy.y,"wifiTeleport");
+
+        /* damage hanya 5 setiap teleport */
+        hurtPlayer(5);
+        enemy.dashCooldown=150;
+        showMessage("👻📶 POCONG WIFI TELEPORT! -5 HP");
+    }
+}
+
+/* TANK */
+
+if(enemy.type==="tank"){
+
+if(
+distance<140 &&
+enemy.attackCooldown<=0
+){
+
+createEffect(
+enemy.x,
+enemy.y,
+"tank"
+);
+
+if(distance<130){
+
+hurtPlayer(
+enemy.damage*1.4
+);
+
+}
+
+enemy.attackCooldown=120;
+
+}
+
+}
+
+});
+
+}
+
+
+/* ==================================================
+              BOSS BULLET ATTACK
+================================================== */
+
+function bossBulletAttack(){
+
+const boss=
+enemies.find(
+e=>e.type==="boss"&&e.alive
+);
+
+if(!boss)
+return;
+
+bossVoice();
+
+showMessage("👑 RAJA SAWIT: MBG!!!");
+
+let count=
+bossPhase===1
+?8
+:
+bossPhase===2
+?12
+:
+16;
+
+let speed=
+bossPhase===1
+?3.3
+:
+bossPhase===2
+?3.8
+:
+4.3;
+
+let damage=
+bossPhase===1
+?14
+:
+bossPhase===2
+?17
+:
+20;
+
+for(
+let i=0;
+i<count;
+i++
+){
+
+let angle=
+Math.PI*2*i/count;
+
+projectiles.push({
+
+x:boss.x,
+y:boss.y,
+
+vx:Math.cos(angle)*speed,
+vy:Math.sin(angle)*speed,
+
+damage:damage,
+
+enemy:true,
+
+size:9
+
+});
+
+}
+
+createEffect(
+boss.x,
+boss.y,
+"boss"
+);
+
+}
+
+
+/* ==================================================
+              BOSS MBG ATTACK
+================================================== */
+
+function bossMBGAttack(){
+
+const boss=
+enemies.find(
+e=>e.type==="boss"&&e.alive
+);
+
+if(!boss)
+return;
+
+bossVoice();
+
+showMessage(
+"👑 RAJA SAWIT: MBG!!!"
+);
+
+/*
+   Target sedikit di depan player
+*/
+
+let targetX=
+player.x;
+
+let targetY=
+player.y;
+
+/*
+   Lempar MBG
+*/
+
+projectiles.push({
+
+x:boss.x,
+y:boss.y,
+
+targetX:targetX,
+targetY:targetY,
+
+vx:0,
+vy:0,
+
+enemy:true,
+
+type:"mbg",
+
+size:15,
+
+life:80
+
+});
+
+}
+
+
+/* ==================================================
+              BOSS AOE
+================================================== */
+
+function bossAoEAttack(){
+
+const boss=
+enemies.find(
+e=>e.type==="boss"&&e.alive
+);
+
+if(!boss)
+return;
+
+bossVoice();
+
+showMessage(
+"👑 RAJA SAWIT: AWAS!!!"
+);
+
+createEffect(
+boss.x,
+boss.y,
+"boss"
+);
+
+let dx=
+player.x-boss.x;
+
+let dy=
+player.y-boss.y;
+
+let dist=
+Math.sqrt(dx*dx+dy*dy);
+
+if(dist<180){
+
+hurtPlayer(
+bossPhase===3
+?35
+:25
+);
+
+}
+
+}
+
+
+/* ==================================================
+                    ROBOT MISSILE
+================================================== */
+
+function robotMissileAttack(robot){
+    const dx=player.x-robot.x;
+    const dy=player.y-robot.y;
+    const dist=Math.hypot(dx,dy);
+    if(!dist) return;
+    projectiles.push({
+        x:robot.x,y:robot.y,
+        vx:dx/dist*4.8,vy:dy/dist*4.8,
+        damage:30,enemy:true,size:12,
+        type:"missile",life:180
+    });
+    createEffect(robot.x,robot.y,"missileLaunch");
+    beep(220,.12,"square",.08);
+}
+
+function missileExplosion(x,y){
+    createEffect(x,y,"missileExplosion");
+    createParticles(x,y,"#ff8a32",35);
+    beep(80,.25,"sawtooth",.12);
+    const dx=player.x-x, dy=player.y-y;
+    const dist=Math.hypot(dx,dy);
+    if(dist<=95){
+        hurtPlayer(30);
+        const nx=dist?dx/dist:1, ny=dist?dy/dist:0;
+        player.knockbackX=nx*16;
+        player.knockbackY=ny*16;
+        player.knockbackTimer=22;
+        showMessage("💥 MISSILE! -30 HP + KNOCKBACK!");
+    }
+}
+
+/* ==================================================
+                    PLAYER DAMAGE
+================================================== */
+
+function hurtPlayer(damage){
+
+if(dukunInvincibleTimer>0 && selectedCharacter===1){
+    createParticles(player.x,player.y,"#c05cff",8);
+    createEffect(player.x,player.y,"dukunBlock");
+    showMessage("🛡️ ILMU ABADI MENAHAN SERANGAN!");
+    return;
+}
+
+if(player.invincible>0)
+return;
+
+player.hp-=damage;
+
+player.invincible=45;
+
+createParticles(
+player.x,
+player.y,
+"#ff3333",
+14
+);
+
+if(player.hp<=0){
+
+player.hp=0;
+
+gameOver();
+
+}
+
+}
+
+
+/* ==================================================
+                    PLAYER SKILLS
+================================================== */
+
+function useSkill(skill){
+
+if(!gameRunning)
+return;
+
+
+/* SAWIT */
+
+if(skill===1){
+
+if(player.skillCD1>0)
+return;
+
+const target=
+getNearestEnemy();
+
+if(!target)
+return;
+
+let dx=
+target.x-player.x;
+
+let dy=
+target.y-player.y;
+
+let dist=
+Math.sqrt(dx*dx+dy*dy);
+
+projectiles.push({
+
+x:player.x,
+y:player.y,
+
+vx:dx/dist*7,
+vy:dy/dist*7,
+
+damage:player.damage,
+
+enemy:false,
+
+size:9,
+
+type:"sawit"
+
+});
+
+player.skillCD1=35;
+
+}
+
+
+/* HEAL */
+
+if(skill===2){
+
+if(player.skillCD2>0)
+return;
+
+player.hp+=
+player.healPower;
+
+if(player.hp>player.maxHp)
+player.hp=player.maxHp;
+
+createEffect(
+player.x,
+player.y,
+"heal"
+);
+
+createParticles(
+player.x,
+player.y,
+"#55ff88",
+12
+);
+
+player.skillCD2=180;
+
+}
+
+
+/* JOGET */
+
+if(skill===3){
+
+if(player.skillCD3>0)
+return;
+
+createEffect(
+player.x,
+player.y,
+"joget"
+);
+
+enemies.forEach(enemy=>{
+
+if(!enemy.alive)
+return;
+
+let dx=
+enemy.x-player.x;
+
+let dy=
+enemy.y-player.y;
+
+let dist=
+Math.sqrt(dx*dx+dy*dy);
+
+if(dist<125){
+
+damageEnemy(
+enemy,
+player.damage*1.25
+);
+
+if(dist>0){
+
+enemy.x+=
+(dx/dist)*60;
+
+enemy.y+=
+(dy/dist)*60;
+
+}
+
+}
+
+});
+
+player.skillCD3=210;
+
+}
+
+}
+
+
+/* ==================================================
+                    NEAREST
+================================================== */
+
+function getNearestEnemy(){
+
+let nearest=null;
+let best=Infinity;
+
+enemies.forEach(enemy=>{
+
+if(!enemy.alive)
+return;
+
+let dx=
+enemy.x-player.x;
+
+let dy=
+enemy.y-player.y;
+
+let d=
+Math.sqrt(dx*dx+dy*dy);
+
+if(d<best){
+
+best=d;
+nearest=enemy;
+
+}
+
+});
+
+return nearest;
+
+}
+
+
+/* ==================================================
+                PROJECTILES UPDATE
+================================================== */
+
+function updateProjectiles(){
+
+projectiles.forEach(p=>{
+
+/* GOLEM ROCKS: VISUAL ONLY — TIDAK MENGHALANGI / TIDAK MENYENTUH PLAYER */
+if(p.type==="golemRockFX"){
+    p.life--;
+    if(p.life<=0) p.dead=true;
+    return;
+}
+
+/* ==================================================
+                    ROBOT MISSILE
+================================================== */
+
+if(p.type==="missile"){
+    p.life--;
+    p.x+=p.vx;
+    p.y+=p.vy;
+    const d=Math.hypot(player.x-p.x,player.y-p.y);
+    if(d<22 || p.life<=0){
+        missileExplosion(p.x,p.y);
+        p.dead=true;
+    }
+    return;
+}
+
+/* ==================================================
+                    MBG
+================================================== */
+
+if(p.type==="mbg"){
+
+p.life--;
+
+let dx=
+p.targetX-p.x;
+
+let dy=
+p.targetY-p.y;
+
+let dist=
+Math.sqrt(dx*dx+dy*dy);
+
+if(dist>8){
+
+p.x+=
+(dx/dist)*7;
+
+p.y+=
+(dy/dist)*7;
+
+}else{
+
+/*
+   JATUH
+*/
+
+mbgExplosion(
+p.x,
+p.y
+);
+
+p.dead=true;
+
+}
+
+return;
+
+}
+
+
+/* LASER LELE: beam diam di tempat sampai mentok */
+if(p.type==="fishLaser"){
+    p.life--;
+    const ex=p.x+Math.cos(p.angle)*p.length;
+    const ey=p.y+Math.sin(p.angle)*p.length;
+    const ux=Math.cos(p.angle), uy=Math.sin(p.angle);
+    const px=player.x-p.x, py=player.y-p.y;
+    const along=px*ux+py*uy;
+    const perp=Math.abs(px*uy-py*ux);
+    if(!p.hit && along>=0 && along<=p.length && perp<=p.width+player.size/2){
+        hurtPlayer(p.damage);
+        p.hit=true;
+        p.dead=true;
+    }
+    return;
+}
+
+/* NORMAL PROJECTILE */
+
+p.x+=p.vx;
+p.y+=p.vy;
+
+if(
+p.x<-40||
+p.x>940||
+p.y<-40||
+p.y>540
+){
+
+p.dead=true;
+
+}
+
+
+/* PLAYER PROJECTILE */
+
+if(!p.enemy){
+
+enemies.forEach(enemy=>{
+
+if(!enemy.alive)
+return;
+
+let dx=
+enemy.x-p.x;
+
+let dy=
+enemy.y-p.y;
+
+let d=
+Math.sqrt(dx*dx+dy*dy);
+
+if(
+d<
+enemy.size/2+p.size
+){
+
+damageEnemy(
+enemy,
+p.damage
+);
+
+p.dead=true;
+
+}
+
+});
+
+}
+
+
+/* ENEMY PROJECTILE */
+
+else{
+
+let dx=
+player.x-p.x;
+
+let dy=
+player.y-p.y;
+
+let d=
+Math.sqrt(dx*dx+dy*dy);
+
+if(
+d<
+player.size/2+p.size
+){
+
+hurtPlayer(p.damage);
+
+p.dead=true;
+
+}
+
+}
+
+});
+
+projectiles=
+projectiles.filter(
+p=>!p.dead
+);
+
+}
+
+
+/* ==================================================
+                MBG EXPLOSION
+================================================== */
+
+function mbgExplosion(x,y){
+
+/* DAMAGE */
+
+let dx=
+player.x-x;
+
+let dy=
+player.y-y;
+
+let dist=
+Math.sqrt(dx*dx+dy*dy);
+
+if(dist<90){
+
+hurtPlayer(
+bossPhase===3
+?38
+:
+bossPhase===2
+?30
+:24
+);
+
+/*
+    langsung kena racun
+*/
+
+applyPoison();
+
+}
+
+
+/* ZONA RACUN */
+
+poisonZones.push({
+
+x:x,
+y:y,
+
+radius:70,
+
+life:
+bossPhase===3
+?500
+:400
+
+});
+
+
+/* efek */
+
+createEffect(
+x,
+y,
+"poison"
+);
+
+createParticles(
+x,
+y,
+"#8aff35",
+30
+);
+
+beep(
+70,
+.18,
+"sawtooth",
+.1
+);
+
+}
+
+
+/* ==================================================
+                    POISON
+================================================== */
+
+function applyPoison(){
+
+player.poisonTimer=
+Math.max(
+player.poisonTimer,
+180
+);
+
+player.poisonDamageTimer=1;
+
+player.slowTimer=
+Math.max(
+player.slowTimer,
+180
+);
+
+showMessage(
+"☠️ KENA RACUN MBG! SLOW!"
+);
+
+}
+
+
+/* ==================================================
+              UPDATE POISON ZONE
+================================================== */
+
+function updatePoisonZones(){
+
+poisonZones.forEach(zone=>{
+
+zone.life--;
+
+let dx=
+player.x-zone.x;
+
+let dy=
+player.y-zone.y;
+
+let dist=
+Math.sqrt(dx*dx+dy*dy);
+
+if(
+dist<
+zone.radius
+){
+
+applyPoison();
+
+}
+
+});
+
+poisonZones=
+poisonZones.filter(
+z=>z.life>0
+);
+
+}
+
+
+/* ==================================================
+                    KILL ENEMY HELPER
+================================================== */
+
+/* Dipakai oleh skill summon seperti Seta.
+   Gunakan damageEnemy supaya reward coin/XP tetap sama. */
+function killEnemy(enemy){
+    if(!enemy || !enemy.alive) return;
+
+    damageEnemy(
+        enemy,
+        Math.max(0, enemy.hp)
+    );
+}
+
+
+/* ==================================================
+                    DAMAGE ENEMY
+================================================== */
+
+function damageEnemy(
+enemy,
+damage
+){
+
+if(!enemy.alive)
+return;
+
+/* Lele Mutan langsung KO jika terkena tembakan player */
+if(enemy.type==="lele" && damage>0){
+    enemy.hp=0;
+}else{
+    enemy.hp-=damage;
+}
+
+enemy.hitFlash=6;
+
+createParticles(
+enemy.x,
+enemy.y,
+"#ffd83d",
+5
+);
+
+if(enemy.hp<=0){
+
+enemy.hp=0;
+
+enemy.alive=false;
+
+saveData.coins+=
+enemy.coin;
+
+saveGame();
+
+showMessage(
+`💀 ${enemyTypes[enemy.type].name} KO! +${enemy.coin} 🪙`
+);
+
+player.xp+=enemy.xp;
+
+checkLevelUp();
+
+}
+
+}
+
+
+/* ==================================================
+                    LEVEL UP
+================================================== */
+
+function checkLevelUp(){
+
+while(
+player.xp>=player.xpNeeded
+){
+
+player.xp-=
+player.xpNeeded;
+
+player.level++;
+
+player.xpNeeded=
+Math.floor(
+player.xpNeeded*1.4
+);
+
+if(selectedCharacter!==1){
+    player.maxHp+=10;
+    player.hp=player.maxHp;
+}else{
+    player.maxHp=40;
+    if(player.hp>40) player.hp=40;
+}
+
+player.damage+=3;
+
+showMessage(
+`⭐ LEVEL UP! LV ${player.level}`
+);
+
+}
+
+}
+
+
+/* ==================================================
+                    COMPLETE
+================================================== */
+
+function checkLevelComplete(){
+
+if(
+enemies.filter(e=>!e.isSummon).length>0 &&
+enemies.filter(e=>!e.isSummon).every(e=>!e.alive) &&
+!levelFinished
+){
+
+levelFinished=true;
+
+gameRunning=false;
+
+if(
+currentLevel===
+saveData.unlockedLevel &&
+currentLevel<levels.length
+){
+
+saveData.unlockedLevel++;
+
+saveGame();
+
+}
+
+setTimeout(()=>{
+
+showOverlay(
+
+"🏆 LEVEL SELESAI!",
+
+`Level ${currentLevel} selesai!<br><br>
+🪙 Koin: ${saveData.coins}`,
+
+currentLevel<levels.length
+?"➡ LEVEL BERIKUTNYA"
+:"🏆 TAMAT",
+
+()=>{
+
+if(
+currentLevel<levels.length
+){
+
+startLevel(
+currentLevel+1
+);
+
+}else{
+
+showMainMenu();
+
+}
+
+},
+
+"🏠 MENU",
+
+()=>showMainMenu()
+
+);
+
+},500);
+
+}
+
+}
+
+
+/* ==================================================
+                    GAME OVER
+================================================== */
+
+function gameOver(){
+
+gameRunning=false;
+
+showOverlay(
+
+"💀 GAME OVER",
+
+"Makhluk di level ini terlalu kuat!",
+
+"🔄 COBA LAGI",
+
+()=>startLevel(currentLevel),
+
+"🏠 MENU",
+
+()=>showMainMenu()
+
+);
+
+}
+
+
+/* ==================================================
+                    OVERLAY
+================================================== */
+
+function showOverlay(
+title,
+text,
+b1,
+a1,
+b2,
+a2
+){
+
+document.getElementById(
+"overlayTitle"
+).innerHTML=title;
+
+document.getElementById(
+"overlayText"
+).innerHTML=text;
+
+let one=
+document.getElementById(
+"overlayButton1"
+);
+
+let two=
+document.getElementById(
+"overlayButton2"
+);
+
+one.textContent=b1;
+two.textContent=b2;
+
+one.onclick=()=>{
+
+document.getElementById(
+"overlay"
+).style.display="none";
+
+a1();
+
+};
+
+two.onclick=()=>{
+
+document.getElementById(
+"overlay"
+).style.display="none";
+
+a2();
+
+};
+
+document.getElementById(
+"overlay"
+).style.display="flex";
+
+}
+
+
+/* ==================================================
+                    SHOP
+================================================== */
+
+function getPrice(type){
+
+return 100+
+saveData[type+"Upgrade"]*75;
+
+}
+
+
+function buyUpgrade(type){
+
+let price=
+getPrice(type);
+
+if(
+saveData.coins<price
+){
+
+showMessage(
+"🪙 Koin tidak cukup!"
+);
+
+return;
+
+}
+
+saveData.coins-=price;
+
+saveData[type+"Upgrade"]++;
+
+saveGame();
+
+updateShop();
+
+showMessage(
+"✅ Upgrade berhasil!"
+);
+
+}
+
+
+function updateShop(){
+
+document.getElementById(
+"shopCoins"
+).textContent=
+saveData.coins;
+
+document.getElementById(
+"hpPrice"
+).textContent=
+getPrice("hp")+" 🪙";
+
+document.getElementById(
+"damagePrice"
+).textContent=
+getPrice("damage")+" 🪙";
+
+document.getElementById(
+"speedPrice"
+).textContent=
+getPrice("speed")+" 🪙";
+
+document.getElementById(
+"healPrice"
+).textContent=
+getPrice("heal")+" 🪙";
+
+document.getElementById(
+"shopStats"
+).innerHTML=
+
+`❤️ HP Upgrade: ${saveData.hpUpgrade}<br>
+⚔️ Damage Upgrade: ${saveData.damageUpgrade}<br>
+👟 Speed Upgrade: ${saveData.speedUpgrade}<br>
+🍱 Heal Upgrade: ${saveData.healUpgrade}`;
+
+}
+
+
+/* ==================================================
+                    EFFECTS
+================================================== */
+
+function createEffect(
+x,
+y,
+type
+){
+
+effects.push({
+
+x:x,
+y:y,
+
+type:type,
+
+life:30,
+
+radius:10
+
+});
+
+}
+
+
+function updateEffects(){
+
+effects.forEach(e=>{
+
+e.life--;
+
+e.radius+=4;
+
+});
+
+effects=
+effects.filter(
+e=>e.life>0
+);
+
+}
+
+
+/* ==================================================
+                    PARTICLES
+================================================== */
+
+function createParticles(
+x,
+y,
+color,
+amount
+){
+
+for(
+let i=0;
+i<amount;
+i++
+){
+
+particles.push({
+
+x:x,
+y:y,
+
+vx:
+(Math.random()-.5)*5,
+
+vy:
+(Math.random()-.5)*5,
+
+life:30,
+
+color:color
+
+});
+
+}
+
+}
+
+
+function updateParticles(){
+
+particles.forEach(p=>{
+
+p.x+=p.vx;
+p.y+=p.vy;
+
+p.life--;
+
+});
+
+particles=
+particles.filter(
+p=>p.life>0
+);
+
+}
+
+
+/* ==================================================
+                    BACKGROUND
+================================================== */
+
+function drawBackground(){
+
+    /* BASE */
+    ctx.fillStyle="#19351d";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const map=currentLevel;
+
+    /* ==================================================
+                    LEVEL 1 - PERKEBUNAN SAWIT
+    ================================================== */
+    if(map===1){
+
+        ctx.fillStyle="#2d6b2d";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        for(let x=35;x<canvas.width;x+=95){
+            const sway=Math.sin(animationTime+x)*4;
+
+            ctx.fillStyle="#6b4323";
+            ctx.fillRect(x-5,150,10,105);
+
+            ctx.fillStyle="#198f3d";
+            for(let i=0;i<6;i++){
+                const a=(Math.PI*2/6)*i;
+                ctx.beginPath();
+                ctx.moveTo(x,150);
+                ctx.lineTo(
+                    x+Math.cos(a)*38+sway,
+                    150+Math.sin(a)*28
+                );
+                ctx.lineTo(
+                    x+Math.cos(a)*12,
+                    150+Math.sin(a)*10
+                );
+                ctx.fill();
+            }
+
+            ctx.fillStyle="#9b5424";
+            ctx.beginPath();
+            ctx.arc(x+12,168,7,0,Math.PI*2);
+            ctx.fill();
+        }
+
+        ctx.fillStyle="#4c8d3a";
+        ctx.fillRect(0,265,canvas.width,235);
+
+        ctx.fillStyle="#6fae4a";
+        for(let x=0;x<canvas.width;x+=30)
+            ctx.fillRect(x,285+(x%3)*4,4,18);
+    }
+
+    /* ==================================================
+                    LEVEL 2 - KOTA
+    ================================================== */
+    else if(map===2){
+
+        ctx.fillStyle="#27313b";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        /* jalan */
+        ctx.fillStyle="#383838";
+        ctx.fillRect(0,170,canvas.width,180);
+
+        ctx.fillStyle="#e7d75a";
+        for(let x=20;x<canvas.width;x+=70)
+            ctx.fillRect(x,255,38,7);
+
+        /* gedung */
+        const buildings=[
+            [25,45,135,125],
+            [190,20,150,150],
+            [375,65,125,105],
+            [535,15,145,155],
+            [710,55,160,115]
+        ];
+
+        buildings.forEach((b,i)=>{
+            ctx.fillStyle=i%2?"#596879":"#475462";
+            ctx.fillRect(b[0],b[1],b[2],b[3]);
+
+            ctx.fillStyle="#aee8ff";
+            for(let wx=b[0]+18;wx<b[0]+b[2]-12;wx+=30){
+                for(let wy=b[1]+18;wy<b[1]+b[3]-12;wy+=30){
+                    ctx.fillRect(wx,wy,12,15);
+                }
+            }
+        });
+
+        /* trotoar */
+        ctx.fillStyle="#777";
+        ctx.fillRect(0,350,canvas.width,25);
+    }
+
+    /* ==================================================
+                    LEVEL 3 - DAPUR MBG
+    ================================================== */
+    else if(map===3){
+
+        ctx.fillStyle="#7b684e";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        /* dapur besar */
+        ctx.fillStyle="#ddd";
+        ctx.fillRect(40,55,820,330);
+
+        ctx.fillStyle="#b72d25";
+        ctx.fillRect(40,55,820,45);
+
+        ctx.fillStyle="#fff";
+        ctx.font="bold 28px monospace";
+        ctx.textAlign="center";
+        ctx.fillText("🍱 DAPUR MBG",450,87);
+
+        /* meja */
+        ctx.fillStyle="#6e3f22";
+        ctx.fillRect(75,155,230,75);
+        ctx.fillRect(345,155,210,75);
+        ctx.fillRect(600,155,220,75);
+
+        /* panci */
+        ctx.fillStyle="#444";
+        [135,410,665].forEach(x=>{
+            ctx.beginPath();
+            ctx.arc(x,145,32,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle="#f3c54e";
+            ctx.beginPath();
+            ctx.arc(x,145,23,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle="#444";
+        });
+
+        /* kotak makanan */
+        for(let x=90;x<820;x+=58){
+            ctx.fillStyle="#f1cf4a";
+            ctx.fillRect(x,275,42,28);
+            ctx.fillStyle="#d7372f";
+            ctx.fillRect(x+13,282,16,14);
+        }
+    }
+
+    /* ==================================================
+                    LEVEL 4 - GUNUNG SAWIT
+    ================================================== */
+    else if(map===4){
+
+        ctx.fillStyle="#172b21";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        /* gunung */
+        ctx.fillStyle="#355c38";
+        ctx.beginPath();
+        ctx.moveTo(0,320);
+        ctx.lineTo(170,80);
+        ctx.lineTo(330,320);
+        ctx.lineTo(500,65);
+        ctx.lineTo(700,320);
+        ctx.lineTo(820,115);
+        ctx.lineTo(900,320);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle="#587a47";
+        ctx.beginPath();
+        ctx.moveTo(0,360);
+        ctx.lineTo(240,155);
+        ctx.lineTo(430,360);
+        ctx.closePath();
+        ctx.fill();
+
+        /* sawit di gunung */
+        for(let x=80;x<850;x+=130){
+            ctx.fillStyle="#704522";
+            ctx.fillRect(x,305,9,95);
+
+            ctx.fillStyle="#1c8d3b";
+            for(let i=0;i<5;i++){
+                const a=(Math.PI*2/5)*i;
+                ctx.beginPath();
+                ctx.moveTo(x+4,305);
+                ctx.lineTo(x+4+Math.cos(a)*34,305+Math.sin(a)*25);
+                ctx.lineTo(x+4+Math.cos(a)*10,305+Math.sin(a)*10);
+                ctx.fill();
+            }
+        }
+
+        ctx.fillStyle="#6c593e";
+        ctx.fillRect(0,400,canvas.width,100);
+    }
+
+    /* ==================================================
+                    LEVEL 5 - ISTANA RAJA SAWIT
+    ================================================== */
+    else if(map===5){
+
+        /* langit istana */
+        ctx.fillStyle="#111936";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        /* lantai */
+        ctx.fillStyle="#4d3c57";
+        ctx.fillRect(0,330,canvas.width,170);
+
+        /* tembok istana */
+        ctx.fillStyle="#7e5b37";
+        ctx.fillRect(75,80,750,270);
+
+        /* menara kiri-kanan */
+        ctx.fillStyle="#9b713f";
+        ctx.fillRect(25,55,150,295);
+        ctx.fillRect(725,55,150,295);
+
+        /* atap */
+        ctx.fillStyle="#4b1d69";
+        ctx.beginPath();
+        ctx.moveTo(15,58);
+        ctx.lineTo(100,5);
+        ctx.lineTo(185,58);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(715,58);
+        ctx.lineTo(800,5);
+        ctx.lineTo(885,58);
+        ctx.closePath();
+        ctx.fill();
+
+        /* aula utama */
+        ctx.fillStyle="#a77b43";
+        ctx.fillRect(300,65,300,285);
+
+        /* pintu besar */
+        ctx.fillStyle="#24182e";
+        ctx.fillRect(390,205,120,145);
+
+        ctx.fillStyle="#ffd83d";
+        ctx.beginPath();
+        ctx.arc(490,280,7,0,Math.PI*2);
+        ctx.fill();
+
+        /* jendela */
+        ctx.fillStyle="#8fe9ff";
+        ctx.fillRect(115,130,55,75);
+        ctx.fillRect(730,130,55,75);
+        ctx.fillRect(355,120,55,60);
+        ctx.fillRect(490,120,55,60);
+
+        /* tulisan istana */
+        ctx.fillStyle="#ffd83d";
+        ctx.font="bold 25px monospace";
+        ctx.textAlign="center";
+        ctx.fillText("👑 ISTANA RAJA SAWIT",450,48);
+
+        /* singgasana di belakang boss */
+        ctx.fillStyle="#5a1d74";
+        ctx.fillRect(405,135,90,110);
+        ctx.fillStyle="#ffd83d";
+        ctx.fillRect(395,125,110,15);
+        ctx.fillRect(410,115,12,15);
+        ctx.fillRect(444,105,12,25);
+        ctx.fillRect(478,115,12,15);
+    }
+
+    /* jalan arena */
+    ctx.fillStyle="rgba(0,0,0,.12)";
+    ctx.fillRect(0,220,canvas.width,60);
+}
+
+
+/* ==================================================
+                    PLAYER DRAW
+================================================== */
+
+function drawPlayer(){
+
+ctx.save();
+
+let moving=
+keys["w"]||
+keys["a"]||
+keys["s"]||
+keys["d"]||
+keys["arrowup"]||
+keys["arrowdown"]||
+keys["arrowleft"]||
+keys["arrowright"];
+
+let walk=
+moving
+?Math.sin(animationTime*2.5)*5
+:0;
+
+let bob=
+moving
+?Math.abs(
+Math.sin(animationTime*2.5)
+)*2
+:0;
+
+if(player.invincible%10<5)
+ctx.globalAlpha=.55;
+
+
+/* slow effect */
+
+if(player.slowTimer>0){
+
+ctx.globalAlpha=.7;
+
+ctx.fillStyle="#65b5ff";
+
+ctx.beginPath();
+
+ctx.arc(
+player.x,
+player.y,
+25,
+0,
+Math.PI*2
+);
+
+ctx.stroke();
+
+}
+
+
+/* poison effect */
+
+if(player.poisonTimer>0){
+
+ctx.fillStyle="#8aff35";
+
+ctx.globalAlpha=.25;
+
+ctx.beginPath();
+
+ctx.arc(
+player.x,
+player.y,
+22+
+Math.sin(animationTime*5)*5,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+ctx.globalAlpha=1;
+
+}
+
+
+/* shadow */
+
+ctx.fillStyle="rgba(0,0,0,.35)";
+
+ctx.fillRect(
+player.x-15,
+player.y+20,
+30,
+6
+);
+
+
+/* legs */
+
+ctx.fillStyle="#202020";
+
+ctx.fillRect(
+player.x-10+walk,
+player.y+8+bob,
+7,
+15
+);
+
+ctx.fillRect(
+player.x+3-walk,
+player.y+8+bob,
+7,
+15
+);
+
+
+/* shoes */
+
+ctx.fillStyle="#111";
+
+ctx.fillRect(
+player.x-13+walk,
+player.y+20+bob,
+11,
+5
+);
+
+ctx.fillRect(
+player.x+3-walk,
+player.y+20+bob,
+11,
+5
+);
+
+
+/* body */
+
+ctx.fillStyle="#2454a5";
+
+ctx.fillRect(
+player.x-13,
+player.y-8+bob,
+26,
+22
+);
+
+
+/* arms */
+
+ctx.fillStyle="#f1c27d";
+
+ctx.fillRect(
+player.x-19,
+player.y-5+bob+walk,
+6,
+17
+);
+
+ctx.fillRect(
+player.x+13,
+player.y-5+bob-walk,
+6,
+17
+);
+
+
+/* head */
+
+ctx.fillStyle="#f1c27d";
+
+ctx.fillRect(
+player.x-13,
+player.y-32+bob,
+26,
+19
+);
+
+
+/* hair */
+
+ctx.fillStyle="#111";
+
+ctx.fillRect(
+player.x-14,
+player.y-35+bob,
+28,
+7
+);
+
+
+/* eyes */
+
+ctx.fillStyle="#111";
+
+ctx.fillRect(
+player.x-7,
+player.y-24+bob,
+4,
+4
+);
+
+ctx.fillRect(
+player.x+3,
+player.y-24+bob,
+4,
+4
+);
+
+ctx.restore();
+
+}
+
+
+/* ==================================================
+                    GRUNT
+================================================== */
+
+function drawGrunt(e,w,b){
+
+let x=e.x;
+let y=e.y+b;
+
+ctx.fillStyle="rgba(0,0,0,.35)";
+ctx.fillRect(x-16,y+17,32,6);
+
+ctx.fillStyle="#252525";
+
+ctx.fillRect(
+x-9+w,
+y+7,
+7,
+15
+);
+
+ctx.fillRect(
+x+2-w,
+y+7,
+7,
+15
+);
+
+ctx.fillStyle="#78451e";
+
+ctx.fillRect(
+x-13,
+y-9,
+26,
+20
+);
+
+ctx.fillStyle="#d18a52";
+
+ctx.fillRect(
+x-19,
+y-6+w,
+6,
+17
+);
+
+ctx.fillRect(
+x+13,
+y-6-w,
+6,
+17
+);
+
+ctx.fillRect(
+x-12,
+y-29,
+24,
+20
+);
+
+ctx.fillStyle="#111";
+
+ctx.fillRect(
+x-13,
+y-33,
+26,
+7
+);
+
+ctx.fillStyle="#ff3333";
+
+ctx.fillRect(
+x-7,
+y-21,
+4,
+4
+);
+
+ctx.fillRect(
+x+3,
+y-21,
+4,
+4
+);
+
+ctx.fillStyle="#111";
+
+ctx.fillRect(
+x-7,
+y-13,
+14,
+4
+);
+
+}
+
+
+/* ==================================================
+                    RUNNER
+================================================== */
+
+function drawRunner(e,w,b){
+
+let x=e.x;
+let y=e.y+b;
+
+ctx.fillStyle="rgba(0,0,0,.3)";
+
+ctx.fillRect(
+x-14,
+y+18,
+28,
+5
+);
+
+ctx.fillStyle="#333";
+
+ctx.fillRect(
+x-8+w,
+y+5,
+5,
+22
+);
+
+ctx.fillRect(
+x+3-w,
+y+5,
+5,
+22
+);
+
+ctx.fillStyle="#d4a52c";
+
+ctx.fillRect(
+x-9,
+y-11,
+18,
+21
+);
+
+ctx.fillStyle="#d58c4b";
+
+ctx.fillRect(
+x-15,
+y-9+w,
+5,
+18
+);
+
+ctx.fillRect(
+x+10,
+y-9-w,
+5,
+18
+);
+
+ctx.fillRect(
+x-10,
+y-30,
+20,
+19
+);
+
+ctx.fillStyle="#222";
+
+ctx.fillRect(
+x-11,
+y-34,
+22,
+6
+);
+
+ctx.fillStyle="#ff0000";
+
+ctx.fillRect(
+x-6,
+y-22,
+4,
+4
+);
+
+ctx.fillRect(
+x+3,
+y-22,
+4,
+4
+);
+
+}
+
+
+/* ==================================================
+                    TANK
+================================================== */
+
+function drawTank(e,w,b){
+
+let x=e.x;
+let y=e.y+b;
+
+ctx.fillStyle="rgba(0,0,0,.4)";
+
+ctx.fillRect(
+x-24,
+y+23,
+48,
+8
+);
+
+ctx.fillStyle="#202020";
+
+ctx.fillRect(
+x-15+w,
+y+10,
+11,
+20
+);
+
+ctx.fillRect(
+x+4-w,
+y+10,
+11,
+20
+);
+
+ctx.fillStyle="#555";
+
+ctx.fillRect(
+x-24,
+y-16,
+48,
+31
+);
+
+ctx.fillStyle="#777";
+
+ctx.fillRect(
+x-17,
+y-11,
+34,
+21
+);
+
+ctx.fillStyle="#999";
+
+ctx.fillRect(
+x-29,
+y-11,
+8,
+18
+);
+
+ctx.fillRect(
+x+21,
+y-11,
+8,
+18
+);
+
+ctx.fillStyle="#4a4a4a";
+
+ctx.fillRect(
+x-16,
+y-36,
+32,
+22
+);
+
+ctx.fillStyle="#242424";
+
+ctx.fillRect(
+x-20,
+y-41,
+40,
+7
+);
+
+ctx.fillStyle="#ff3333";
+
+ctx.fillRect(
+x-9,
+y-28,
+6,
+5
+);
+
+ctx.fillRect(
+x+3,
+y-28,
+6,
+5
+);
+
+ctx.fillStyle="#ffd83d";
+
+ctx.fillRect(
+x-8,
+y-3,
+16,
+10
+);
+
+}
+
+
+/* ==================================================
+                    BOSS
+================================================== */
+
+function drawBoss(e,w=0,b=0){
+
+    const x=e.x;
+    const y=e.y+b;
+
+    ctx.save();
+
+    /* penanda arena boss supaya Raja tidak pernah "hilang" */
+    ctx.save();
+    ctx.globalAlpha=.16;
+    ctx.fillStyle="#ff1744";
+    ctx.fillRect(x-130,y-150,260,300);
+    ctx.globalAlpha=1;
+    ctx.strokeStyle="#ff1744";
+    ctx.lineWidth=4;
+    ctx.strokeRect(x-130,y-150,260,300);
+    ctx.restore();
+
+    /* aura sangat jelas */
+    ctx.globalAlpha=.25;
+    ctx.fillStyle=bossPhase===3?"#ff2222":"#b63cff";
+    ctx.beginPath();
+    ctx.arc(x,y,105+Math.sin(animationTime*2)*12,0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    /* bayangan */
+    ctx.fillStyle="rgba(0,0,0,.5)";
+    ctx.fillRect(x-48,y+48,96,12);
+
+    /* cape */
+    ctx.fillStyle="#4a126f";
+    ctx.fillRect(x-45,y-8,90,65);
+
+    /* kaki */
+    const leg=Math.sin(animationTime*2.5)*7;
+    ctx.fillStyle="#171717";
+    ctx.fillRect(x-25+leg,y+28,17,28);
+    ctx.fillRect(x+8-leg,y+28,17,28);
+
+    /* badan */
+    ctx.fillStyle="#7e28bb";
+    ctx.fillRect(x-38,y-30,76,65);
+    ctx.fillStyle="#c14ce5";
+    ctx.fillRect(x-27,y-21,54,44);
+
+    /* kepala besar */
+    ctx.fillStyle="#d88b55";
+    ctx.fillRect(x-31,y-72,62,45);
+
+    /* telinga */
+    ctx.fillStyle="#c97849";
+    ctx.fillRect(x-38,y-58,8,16);
+    ctx.fillRect(x+30,y-58,8,16);
+
+    /* crown */
+    ctx.fillStyle="#ffd83d";
+    ctx.fillRect(x-39,y-84,78,13);
+    ctx.fillRect(x-31,y-100,13,17);
+    ctx.fillRect(x-7,y-112,14,28);
+    ctx.fillRect(x+18,y-100,13,17);
+
+    /* mata */
+    ctx.fillStyle="#ff2222";
+    ctx.fillRect(x-19,y-56,10,8);
+    ctx.fillRect(x+9,y-56,10,8);
+
+    /* hidung + kumis/janggut */
+    ctx.fillStyle="#8f4c35";
+    ctx.fillRect(x-5,y-47,10,9);
+    ctx.fillStyle="#222";
+    ctx.fillRect(x-19,y-39,38,12);
+    ctx.fillRect(x-12,y-28,24,10);
+
+    /* tangan */
+    const arm=Math.sin(animationTime*2.5)*5;
+    ctx.fillStyle="#d88b55";
+    ctx.fillRect(x-51,y-18+arm,12,36);
+    ctx.fillRect(x+39,y-18-arm,12,36);
+
+    /* tongkat kerajaan */
+    ctx.fillStyle="#ffd83d";
+    ctx.fillRect(x+48,y-65,6,70);
+    ctx.beginPath();
+    ctx.arc(x+51,y-72,11,0,Math.PI*2);
+    ctx.fill();
+
+    /* nama */
+    ctx.textAlign="center";
+    ctx.font="bold 24px monospace";
+    ctx.lineWidth=5;
+    ctx.strokeStyle="#000";
+    ctx.strokeText("👑 RAJA SAWIT",x,y-130);
+    ctx.fillStyle="#ffd83d";
+    ctx.fillText("👑 RAJA SAWIT",x,y-130);
+
+    /* HP BAR */
+    const barW=190;
+    const ratio=Math.max(0,Math.min(1,e.hp/e.maxHp));
+
+    ctx.fillStyle="#111";
+    ctx.fillRect(x-barW/2,y-116,barW,16);
+
+    ctx.fillStyle=bossPhase===3?"#ff2222":"#e83cff";
+    ctx.fillRect(x-barW/2,y-116,barW*ratio,16);
+
+    ctx.strokeStyle="#fff";
+    ctx.lineWidth=2;
+    ctx.strokeRect(x-barW/2,y-116,barW,16);
+
+    ctx.fillStyle="#fff";
+    ctx.font="bold 13px monospace";
+    ctx.fillText(
+        `${Math.ceil(e.hp)} / ${Math.ceil(e.maxHp)} HP`,
+        x,
+        y-104
+    );
+
+    ctx.fillStyle="#ffd83d";
+    ctx.font="bold 13px monospace";
+    ctx.fillText(`PHASE ${bossPhase}`,x,y+78);
+
+    ctx.restore();
+}
+
+
+/* ==================================================
+                SAWIT PROJECTILE
+================================================== */
+
+function drawSawit(p){
+
+ctx.save();
+
+let angle=
+Math.atan2(
+p.vy,
+p.vx
+);
+
+ctx.translate(
+p.x,
+p.y
+);
+
+ctx.rotate(angle);
+
+ctx.strokeStyle="#4eaa42";
+ctx.lineWidth=3;
+
+for(let i=-1;i<=1;i++){
+
+ctx.beginPath();
+
+ctx.moveTo(-2,0);
+
+ctx.lineTo(
+-17,
+i*7
+);
+
+ctx.stroke();
+
+}
+
+ctx.strokeStyle="#6a401f";
+ctx.lineWidth=4;
+
+ctx.beginPath();
+
+ctx.moveTo(-12,0);
+ctx.lineTo(0,0);
+
+ctx.stroke();
+
+ctx.fillStyle="#75251d";
+
+ctx.fillRect(
+-7,
+-7,
+14,
+14
+);
+
+ctx.fillStyle="#df4d20";
+
+[
+[-6,-7],
+[0,-8],
+[6,-6],
+[-8,0],
+[0,0],
+[7,0],
+[-6,6],
+[0,7],
+[6,6]
+].forEach(pos=>{
+
+ctx.fillRect(
+pos[0],
+pos[1],
+4,
+4
+);
+
+});
+
+ctx.restore();
+
+}
+
+
+/* ==================================================
+                MBG PROJECTILE
+================================================== */
+
+function drawMBG(p){
+
+ctx.save();
+
+ctx.translate(
+p.x,
+p.y
+);
+
+ctx.rotate(
+animationTime*.1
+);
+
+/* box */
+
+ctx.fillStyle="#f5d34b";
+
+ctx.fillRect(
+-18,
+-13,
+36,
+26
+);
+
+/* border */
+
+ctx.strokeStyle="#fff";
+
+ctx.lineWidth=3;
+
+ctx.strokeRect(
+-18,
+-13,
+36,
+26
+);
+
+/* logo */
+
+ctx.fillStyle="#d83b2f";
+
+ctx.fillRect(
+-8,
+-8,
+16,
+16
+);
+
+ctx.fillStyle="#fff";
+
+ctx.fillRect(
+-4,
+-4,
+8,
+8
+);
+
+/* asap */
+
+ctx.fillStyle="#baff65";
+
+ctx.fillRect(
+-20,
+-23,
+5,
+8
+);
+
+ctx.fillRect(
+15,
+-23,
+5,
+8
+);
+
+ctx.restore();
+
+}
+
+
+/* ==================================================
+                POISON ZONES DRAW
+================================================== */
+
+function drawPoisonZones(){
+
+poisonZones.forEach(z=>{
+
+ctx.save();
+
+let pulse=
+Math.sin(animationTime*4)*5;
+
+ctx.globalAlpha=.35;
+
+ctx.fillStyle="#75ff25";
+
+ctx.beginPath();
+
+ctx.arc(
+z.x,
+z.y,
+z.radius+pulse,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+ctx.globalAlpha=.8;
+
+ctx.strokeStyle="#a5ff38";
+
+ctx.lineWidth=4;
+
+ctx.beginPath();
+
+ctx.arc(
+z.x,
+z.y,
+z.radius,
+0,
+Math.PI*2
+);
+
+ctx.stroke();
+
+
+/* gelembung */
+
+ctx.fillStyle="#c5ff70";
+
+for(let i=0;i<5;i++){
+
+let a=
+animationTime*.7+i;
+
+let bx=
+z.x+
+Math.cos(a)*45;
+
+let by=
+z.y+
+Math.sin(a)*45;
+
+ctx.beginPath();
+
+ctx.arc(
+bx,
+by,
+3,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+}
+
+ctx.restore();
+
+});
+
+
+}
+
+
+/* ==================================================
+                    PROJECTILES DRAW
+================================================== */
+
+
+function drawEnemyHP(e, label){
+    const barW = Math.max(44, e.size * 1.55);
+    const barH = 6;
+    const y = e.y - e.size/2 - 15;
+    const ratio = Math.max(0, Math.min(1, e.hp / e.maxHp));
+
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.font = "bold 9px monospace";
+    ctx.fillStyle = "#fff";
+    ctx.shadowColor = "#000";
+    ctx.shadowBlur = 3;
+    ctx.fillText(
+        `${label} ${Math.ceil(e.hp)}/${Math.ceil(e.maxHp)}`,
+        e.x,
+        y - 3
+    );
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#111";
+    ctx.fillRect(e.x - barW/2, y, barW, barH);
+
+    ctx.fillStyle =
+        ratio <= .25 ? "#ff3030" :
+        ratio <= .5 ? "#ffd83d" :
+        "#39e75f";
+
+    ctx.fillRect(e.x - barW/2, y, barW * ratio, barH);
+
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(e.x - barW/2, y, barW, barH);
+    ctx.restore();
+}
+
+function drawEnemies(){
+    /* Summon Seta digambar paling depan */
+    enemies.forEach(e=>{
+        if(e.alive && e.type==="seta") drawSeta(e);
+    });
+
+    /* spotlight Seta agar langsung jadi pusat perhatian */
+    enemies.forEach(e=>{
+        if(!e.alive || e.type!=="seta" || e.introTimer<=0) return;
+        ctx.save();
+        ctx.globalAlpha=.18;
+        ctx.fillStyle="#fff";
+        ctx.beginPath();
+        ctx.arc(e.x,e.y,145+Math.sin(animationTime*5)*15,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    });
+
+    drawTuyul();
+
+    /* Musuh biasa digambar dulu */
+    enemies.forEach(e=>{
+        if(!e.alive || e.type==="boss" || e.type==="seta") return;
+
+        ctx.save();
+        if(e.hitFlash>0) ctx.globalAlpha=.65;
+
+        if(e.type==="robot") drawRobot(e);
+        else if(e.type==="tank") drawTank(e);
+        else if(e.type==="runner") drawRunner(e);
+        else if(e.type==="crawler") drawCockroach(e);
+        else if(e.type==="lele") drawMutantFish(e);
+        else if(e.type==="pocong") drawPocongWifi(e);
+        else if(e.type==="golem") drawGolem(e);
+        else drawGrunt(e);
+
+        ctx.restore();
+    });
+
+    /* BOSS DIGAMBAR PALING AKHIR supaya selalu kelihatan */
+    enemies.forEach(e=>{
+        if(!e.alive || e.type!=="boss") return;
+
+        ctx.save();
+        if(e.hitFlash>0) ctx.globalAlpha=.65;
+        drawBoss(e);
+        ctx.restore();
+    });
+}
+
+function drawCockroach(e){
+    const x=e.x,y=e.y, s=e.size;
+    const run=Math.sin(e.walkFrame*2.5)*7;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(Math.atan2(player.y-y,player.x-x));
+    ctx.fillStyle="rgba(0,0,0,.35)";
+    ctx.fillRect(-s*.7,s*.55,s*1.4,6);
+    /* kaki */
+    ctx.strokeStyle="#6b3d20"; ctx.lineWidth=3;
+    [[-s*.35,-4,-s*.75,-18+run],[-s*.35,5,-s*.78,19-run],[s*.35,-4,s*.75,-18-run],[s*.35,5,s*.78,19+run]].forEach(a=>{
+        ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(a[2],a[3]);ctx.stroke();
+    });
+    /* sayap */
+    ctx.fillStyle="#8f5a32";
+    ctx.beginPath();ctx.ellipse(-s*.2,-2,s*.34,s*.62,-.2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(s*.2,-2,s*.34,s*.62,.2,0,Math.PI*2);ctx.fill();
+    /* badan */
+    ctx.fillStyle="#3b2418";
+    ctx.beginPath();ctx.ellipse(0,3,s*.34,s*.62,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#6b3d20";
+    ctx.beginPath();ctx.arc(0,-s*.38,s*.32,0,Math.PI*2);ctx.fill();
+    /* mata */
+    ctx.fillStyle="#ffdf58";ctx.fillRect(-7,-s*.48,5,5);ctx.fillRect(2,-s*.48,5,5);
+    ctx.restore();
+    drawEnemyHP(e,"KECOAK RAKSASA");
+}
+
+function drawMutantFish(e){
+    const x=e.x,y=e.y,s=e.size;
+    const bob=Math.sin(e.walkFrame*1.7)*3;
+    ctx.save(); ctx.translate(x,y+bob);
+    /* ekor kristal */
+    ctx.fillStyle="#246c9b";
+    ctx.beginPath();ctx.moveTo(s*.45,0);ctx.lineTo(s*.9,-s*.42);ctx.lineTo(s*.82,s*.05);ctx.lineTo(s*.9,s*.45);ctx.closePath();ctx.fill();
+    /* badan */
+    const g=ctx.createLinearGradient(-s*.5,-s*.35,s*.5,s*.35);
+    g.addColorStop(0,"#66d9ff");g.addColorStop(.55,"#2b82bd");g.addColorStop(1,"#174b78");
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,0,s*.62,s*.38,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="#9ff0ff";ctx.lineWidth=2;ctx.stroke();
+    /* sirip */
+    ctx.fillStyle="#56bde6";
+    ctx.beginPath();ctx.moveTo(-s*.1,-s*.25);ctx.lineTo(s*.1,-s*.65);ctx.lineTo(s*.3,-s*.2);ctx.closePath();ctx.fill();
+    /* mata energi */
+    ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(-s*.3,-s*.08,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#d7ffff";ctx.beginPath();ctx.arc(-s*.3,-s*.08,2,0,Math.PI*2);ctx.fill();
+    /* inti laser */
+    ctx.fillStyle="#cfffff";ctx.shadowColor="#52eaff";ctx.shadowBlur=12;ctx.beginPath();ctx.arc(s*.5,0,5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    ctx.restore();
+    drawEnemyHP(e,"LELE MUTAN");
+}
+
+function drawGolem(e){
+    const x=e.x,y=e.y,s=e.size;
+    const slam=e.slamActive;
+    const t=slam ? Math.max(0,32-e.slamTimer) : 0;
+    const lift=slam ? Math.sin(Math.min(1,t/12)*Math.PI)*12 : Math.sin(e.walkFrame)*2;
+    ctx.save(); ctx.translate(x,y-lift);
+    ctx.fillStyle="rgba(0,0,0,.38)"; ctx.fillRect(-s*.58,s*.05,s*1.16,8);
+    if(slam){
+        ctx.globalAlpha=.22; ctx.fillStyle="#c49a6c";
+        ctx.beginPath(); ctx.arc(0,s*.35,58+Math.sin(animationTime*7)*8,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+    }
+    ctx.fillStyle="#45454a"; ctx.fillRect(-s*.38,s*.15,s*.25,s*.48); ctx.fillRect(s*.13,s*.15,s*.25,s*.48);
+    ctx.fillStyle="#6d6b70"; ctx.beginPath();
+    ctx.moveTo(-s*.45,-s*.35); ctx.lineTo(-s*.3,-s*.62); ctx.lineTo(s*.28,-s*.62);
+    ctx.lineTo(s*.48,-s*.28); ctx.lineTo(s*.4,s*.2); ctx.lineTo(-s*.4,s*.2); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle="#a49da1"; ctx.lineWidth=3; ctx.stroke();
+    ctx.fillStyle="#e0b52d"; ctx.fillRect(-s*.22,-s*.25,s*.44,s*.34);
+    ctx.fillStyle="#fff1a3"; ctx.fillRect(-s*.08,-s*.18,s*.16,s*.18);
+    ctx.fillStyle="#55545a"; ctx.beginPath();
+    ctx.moveTo(-s*.3,-s*.72); ctx.lineTo(-s*.2,-s*.98); ctx.lineTo(s*.22,-s*.98);
+    ctx.lineTo(s*.34,-s*.68); ctx.lineTo(s*.2,-s*.45); ctx.lineTo(-s*.25,-s*.48); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle="#aaa5aa"; ctx.stroke();
+    ctx.fillStyle=slam?"#ff6b35":"#ffdf55"; ctx.shadowColor=ctx.fillStyle; ctx.shadowBlur=slam?14:7;
+    ctx.fillRect(-s*.18,-s*.73,8,6); ctx.fillRect(s*.08,-s*.73,8,6); ctx.shadowBlur=0;
+    const armLift=slam?-s*.42:Math.sin(e.walkFrame)*4;
+    ctx.fillStyle="#59585d"; ctx.fillRect(-s*.72,-s*.35+armLift,s*.22,s*.62); ctx.fillRect(s*.5,-s*.35+armLift,s*.22,s*.62);
+    ctx.fillStyle="#3f3e43"; ctx.fillRect(-s*.77,-s*.05+armLift,s*.32,s*.25); ctx.fillRect(s*.45,-s*.05+armLift,s*.32,s*.25);
+    if(slam){ ctx.fillStyle="#ffd83d"; ctx.font="bold 12px monospace"; ctx.textAlign="center"; ctx.fillText("💥 GEPREK!",0,-s*1.12); }
+    ctx.restore();
+    drawEnemyHP(e,"GOLEM MBG");
+}
+
+function drawPocongWifi(e){
+    const x=e.x,y=e.y,s=e.size;
+    const bob=Math.sin(e.walkFrame*1.8)*4;
+    const glitch=Math.sin(animationTime*8)*2;
+    ctx.save();
+    ctx.translate(x,y+bob);
+
+    /* bayangan */
+    ctx.fillStyle="rgba(0,0,0,.35)";
+    ctx.beginPath();
+    ctx.ellipse(0,s*.62,s*.5,7,0,0,Math.PI*2);
+    ctx.fill();
+
+    /* aura WiFi */
+    ctx.strokeStyle="rgba(80,220,255,.55)";
+    ctx.lineWidth=2;
+    for(let i=1;i<=3;i++){
+        ctx.beginPath();
+        ctx.arc(0,-s*.18,i*9,Math.PI*1.15,Math.PI*1.85);
+        ctx.stroke();
+    }
+
+    /* kain pocong bergelombang */
+    ctx.fillStyle="#f4f7f5";
+    ctx.beginPath();
+    ctx.moveTo(-s*.42,-s*.25);
+    ctx.lineTo(-s*.3,-s*.58);
+    ctx.quadraticCurveTo(0,-s*.78,s*.3,-s*.58);
+    ctx.lineTo(s*.42,-s*.25);
+    ctx.lineTo(s*.34,s*.48);
+    ctx.lineTo(s*.15,s*.62);
+    ctx.lineTo(0,s*.48);
+    ctx.lineTo(-s*.16,s*.62);
+    ctx.lineTo(-s*.35,s*.48);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle="#b8c8c8";
+    ctx.lineWidth=3;
+    ctx.stroke();
+
+    /* ikatan kepala */
+    ctx.fillStyle="#d9e4e3";
+    ctx.fillRect(-s*.38,-s*.67,s*.76,8);
+    ctx.fillRect(-5,-s*.78,10,12);
+
+    /* wajah */
+    ctx.fillStyle="#20282b";
+    ctx.fillRect(-s*.2,-s*.48,8,6);
+    ctx.fillRect(s*.06,-s*.48,8,6);
+    ctx.fillStyle="#62eaff";
+    ctx.fillRect(-s*.18,-s*.46,4,3);
+    ctx.fillRect(s*.08,-s*.46,4,3);
+
+    /* sabuk WiFi */
+    ctx.fillStyle="#4bd7ef";
+    ctx.fillRect(-s*.34,s*.02,s*.68,5);
+    ctx.fillStyle="#d9ffff";
+    ctx.fillRect(-3,-1,6,6);
+
+    /* glitch teleport */
+    if(e.dashCooldown<18){
+        ctx.globalAlpha=.65;
+        ctx.strokeStyle="#62eaff";
+        ctx.lineWidth=2;
+        for(let i=-1;i<=1;i++){
+            ctx.beginPath();
+            ctx.moveTo(-s*.65, i*8+glitch);
+            ctx.lineTo(s*.65, i*8-glitch);
+            ctx.stroke();
+        }
+        ctx.globalAlpha=1;
+    }
+
+    ctx.restore();
+    drawEnemyHP(e,"POCONG WIFI");
+}
+
+function drawNewCreature(e,emoji,bg){
+    ctx.save();
+    const bob=Math.sin(e.walkFrame*1.4)*3;
+    ctx.translate(e.x,e.y+bob);
+    ctx.fillStyle="rgba(0,0,0,.4)";
+    ctx.fillRect(-e.size*.55,e.size*.55,e.size*1.1,7);
+    ctx.fillStyle=bg;
+    ctx.fillRect(-e.size/2,-e.size/2,e.size,e.size);
+    ctx.strokeStyle="#111";
+    ctx.lineWidth=4;
+    ctx.strokeRect(-e.size/2,-e.size/2,e.size,e.size);
+    ctx.font=`${Math.max(22,e.size-4)}px sans-serif`;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(emoji,0,0);
+    ctx.font="bold 11px monospace";
+    ctx.fillStyle="#fff";
+    ctx.fillText(enemyTypes[e.type].name,0,-e.size/2-12);
+    ctx.restore();
+    drawEnemyHP(e,enemyTypes[e.type].name);
+}
+
+function drawRobot(e){
+
+    const x=e.x;
+    const y=e.y;
+    const step=Math.sin(e.walkFrame)*5;
+
+    ctx.save();
+
+    ctx.fillStyle="rgba(0,0,0,.4)";
+    ctx.fillRect(x-25,y+25,50,8);
+
+    /* kaki jalan */
+    ctx.fillStyle="#1e242a";
+    ctx.fillRect(x-17+step,y+18,10,19);
+    ctx.fillRect(x+7-step,y+18,10,19);
+
+    /* body */
+    ctx.fillStyle="#333b44";
+    ctx.fillRect(x-23,y-20,46,40);
+
+    /* lengan */
+    ctx.fillStyle="#606a73";
+    ctx.fillRect(x-31,y-8-step*.5,8,20);
+    ctx.fillRect(x+23,y-8+step*.5,8,20);
+
+    /* kepala */
+    ctx.fillStyle="#8b969f";
+    ctx.fillRect(x-18,y-42,36,23);
+
+    /* mata */
+    ctx.fillStyle="#ff3333";
+    ctx.fillRect(x-11,y-35,7,5);
+    ctx.fillRect(x+4,y-35,7,5);
+
+    /* launcher */
+    ctx.fillStyle="#222";
+    ctx.fillRect(x+20,y-7,23,9);
+
+    /* antenna */
+    ctx.strokeStyle="#aaa";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(x,y-42);
+    ctx.lineTo(x,y-53);
+    ctx.stroke();
+
+    ctx.fillStyle="#ff3333";
+    ctx.fillRect(x-3,y-57,6,6);
+
+    drawEnemyHP(e,"ROBOT MISSILE");
+
+    ctx.restore();
+}
+function drawGrunt(e){
+
+    const x=e.x;
+    const y=e.y;
+    const step=Math.sin(e.walkFrame)*5;
+
+    ctx.save();
+
+    /* shadow */
+    ctx.fillStyle="rgba(0,0,0,.35)";
+    ctx.fillRect(x-18,y+17,36,7);
+
+    /* kaki bergerak */
+    ctx.fillStyle="#252525";
+    ctx.fillRect(x-10+step,y+6,7,18);
+    ctx.fillRect(x+3-step,y+6,7,18);
+
+    /* badan */
+    ctx.fillStyle="#78451e";
+    ctx.fillRect(x-15,y-10,30,22);
+
+    /* tangan ikut ayunan */
+    ctx.fillStyle="#d18a52";
+    ctx.fillRect(x-21,y-7-step*.5,6,18);
+    ctx.fillRect(x+15,y-7+step*.5,6,18);
+
+    /* kepala */
+    ctx.fillRect(x-13,y-33,26,21);
+
+    /* rambut */
+    ctx.fillStyle="#111";
+    ctx.fillRect(x-14,y-37,28,7);
+
+    /* mata */
+    ctx.fillStyle="#ff3333";
+    ctx.fillRect(x-7,y-24,4,4);
+    ctx.fillRect(x+3,y-24,4,4);
+
+    drawEnemyHP(e,"PREMAN SAWIT");
+
+    ctx.restore();
+}
+function drawRunner(e){
+
+    const x=e.x;
+    const y=e.y;
+    const step=Math.sin(e.walkFrame*1.35)*7;
+
+    ctx.save();
+
+    ctx.fillStyle="rgba(0,0,0,.3)";
+    ctx.fillRect(x-15,y+18,30,6);
+
+    /* kaki lari */
+    ctx.fillStyle="#333";
+    ctx.fillRect(x-8+step,y+5,6,23);
+    ctx.fillRect(x+2-step,y+5,6,23);
+
+    ctx.fillStyle="#d4a52c";
+    ctx.fillRect(x-11,y-12,22,22);
+
+    /* tangan berayun */
+    ctx.fillStyle="#d58c4b";
+    ctx.fillRect(x-17,y-8-step*.5,5,18);
+    ctx.fillRect(x+12,y-8+step*.5,5,18);
+
+    ctx.fillRect(x-11,y-32,22,20);
+
+    ctx.fillStyle="#222";
+    ctx.fillRect(x-12,y-36,24,6);
+
+    ctx.fillStyle="#ff0000";
+    ctx.fillRect(x-7,y-24,4,4);
+    ctx.fillRect(x+3,y-24,4,4);
+
+    drawEnemyHP(e,"PELARI SAWIT");
+
+    ctx.restore();
+}
+function drawTank(e){
+
+    const x=e.x;
+    const y=e.y;
+    const step=Math.sin(e.walkFrame)*4;
+
+    ctx.save();
+
+    /* efek charge */
+    if(e.charging){
+        ctx.globalAlpha=.35;
+        ctx.fillStyle="#ff6b35";
+        ctx.beginPath();
+        ctx.arc(x,y,42+Math.sin(animationTime*8)*5,0,Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha=1;
+    }
+
+    ctx.fillStyle="rgba(0,0,0,.4)";
+    ctx.fillRect(x-27,y+24,54,8);
+
+    /* kaki */
+    ctx.fillStyle="#202020";
+    ctx.fillRect(x-16+step,y+10,11,22);
+    ctx.fillRect(x+5-step,y+10,11,22);
+
+    /* badan */
+    ctx.fillStyle="#555";
+    ctx.fillRect(x-27,y-17,54,34);
+
+    ctx.fillStyle="#777";
+    ctx.fillRect(x-19,y-12,38,23);
+
+    /* kepala */
+    ctx.fillStyle="#4a4a4a";
+    ctx.fillRect(x-17,y-39,34,23);
+
+    ctx.fillStyle="#242424";
+    ctx.fillRect(x-21,y-44,42,7);
+
+    /* mata */
+    ctx.fillStyle=e.charging?"#ff4b20":"#ff3333";
+    ctx.fillRect(x-10,y-31,6,5);
+    ctx.fillRect(x+4,y-31,6,5);
+
+    /* tangan */
+    ctx.fillStyle="#999";
+    ctx.fillRect(x-33,y-10-step*.4,8,20);
+    ctx.fillRect(x+25,y-10+step*.4,8,20);
+
+    /* tulisan seruduk */
+    if(e.charging){
+        ctx.fillStyle="#ffd83d";
+        ctx.font="bold 12px monospace";
+        ctx.textAlign="center";
+        ctx.fillText("💥 SERUDUK!",x,y-55);
+    }
+
+    drawEnemyHP(e,"TANK MBG");
+
+    ctx.restore();
+}
+function drawFishLaser(p){
+    const ex=p.x+Math.cos(p.angle)*p.length;
+    const ey=p.y+Math.sin(p.angle)*p.length;
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,p.life/8);
+    ctx.lineCap="round";
+    ctx.shadowColor="#55eaff";ctx.shadowBlur=18;
+    ctx.strokeStyle="#55eaff";ctx.lineWidth=p.width;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.shadowBlur=4;ctx.strokeStyle="#ffffff";ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.restore();
+}
+
+function drawProjectiles(){
+
+projectiles.forEach(p=>{
+
+if(p.type==="fishLaser"){
+    drawFishLaser(p);
+}
+else if(p.type==="sawit"){
+
+drawSawit(p);
+
+}
+
+else if(p.type==="golemRockFX"){
+    ctx.save();
+    const pulse=1+Math.sin(animationTime*8+p.x)*.08;
+    ctx.translate(p.x,p.y); ctx.scale(pulse,pulse);
+    ctx.fillStyle="rgba(181,139,90,.25)";
+    ctx.beginPath(); ctx.arc(0,2,p.size+7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#76604c";
+    ctx.beginPath();
+    ctx.moveTo(-p.size*.75,p.size*.15); ctx.lineTo(-p.size*.45,-p.size*.65);
+    ctx.lineTo(p.size*.2,-p.size*.85); ctx.lineTo(p.size*.75,-p.size*.25);
+    ctx.lineTo(p.size*.55,p.size*.65); ctx.lineTo(-p.size*.25,p.size*.8);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle="#c7a77a"; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle="#a98a63"; ctx.fillRect(-4,-5,7,4);
+    ctx.restore();
+}
+
+else if(p.type==="mbg"){
+
+drawMBG(p);
+
+}
+
+else if(p.type==="missile"){
+    drawMissile(p);
+}
+
+else{
+
+ctx.fillStyle=
+p.enemy
+?"#ff4444"
+:"#66ff66";
+
+ctx.fillRect(
+p.x-p.size/2,
+p.y-p.size/2,
+p.size,
+p.size
+);
+
+}
+
+});
+
+}
+
+
+function drawMissile(p){
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(Math.atan2(p.vy,p.vx));
+    ctx.fillStyle="#555"; ctx.fillRect(-14,-6,24,12);
+    ctx.fillStyle="#ddd"; ctx.fillRect(8,-4,9,8);
+    ctx.fillStyle="#e33"; ctx.fillRect(-10,-10,8,4); ctx.fillRect(-10,6,8,4);
+    ctx.fillStyle="#ff9d22"; ctx.fillRect(-21,-4,9,8);
+    ctx.restore();
+}
+
+/* ==================================================
+                    EFFECT DRAW
+================================================== */
+
+function drawEffects(){
+    /* teks aksi Tuyul */
+    effects.forEach(e=>{
+        if(e.type!=="tuyulText" && e.type!=="tuyulHealText") return;
+        ctx.save();
+        ctx.textAlign="center";
+        ctx.font="bold 13px monospace";
+        ctx.globalAlpha=Math.max(0,e.life/45);
+        ctx.strokeStyle="#000";
+        ctx.lineWidth=4;
+        const yy=e.y-(45-e.life)*.7;
+        const text=e.type==="tuyulText" ? `- ${e.amount} HP` : `+ ${e.amount} HP`;
+        ctx.strokeText(text,e.x,yy);
+        ctx.fillStyle=e.type==="tuyulText" ? "#ff4fd8" : "#55ff88";
+        ctx.fillText(text,e.x,yy);
+        ctx.restore();
+    });
+
+effects.forEach(e=>{
+
+ctx.save();
+
+ctx.globalAlpha=
+e.life/30;
+
+ctx.lineWidth=5;
+
+if(e.type==="joget")
+ctx.strokeStyle="#ffd83d";
+
+else if(e.type==="heal")
+ctx.strokeStyle="#42ff7b";
+
+else if(e.type==="boss")
+ctx.strokeStyle="#c15cff";
+
+else if(e.type==="tank")
+ctx.strokeStyle="#ff6b35";
+
+else if(e.type==="poison")
+ctx.strokeStyle="#8aff35";
+
+else if(e.type==="missileExplosion" || e.type==="missileLaunch")
+ctx.strokeStyle="#ff8a32";
+
+else if(e.type==="tankCharge" || e.type==="tankHit")
+ctx.strokeStyle="#ff6b35";
+
+else
+ctx.strokeStyle="#fff";
+
+ctx.beginPath();
+
+ctx.arc(
+e.x,
+e.y,
+e.radius,
+0,
+Math.PI*2
+);
+
+ctx.stroke();
+
+ctx.restore();
+
+});
+
+
+}
+
+
+/* ==================================================
+                    PARTICLES DRAW
+================================================== */
+
+function drawParticles(){
+
+particles.forEach(p=>{
+
+ctx.fillStyle=p.color;
+
+ctx.fillRect(
+p.x,
+p.y,
+4,
+4
+);
+
+});
+
+}
+
+
+/* ==================================================
+                    DRAW
+================================================== */
+
+function draw(){
+
+drawBackground();
+
+drawPoisonZones();
+
+drawEffects();
+
+drawEnemies();
+
+drawProjectiles();
+
+drawPlayer();
+
+drawParticles();
+
+}
+
+
+/* ==================================================
+                    UI
+================================================== */
+
+function updateUI(){
+
+const hpPercent=Math.max(0,Math.min(100,player.hp/player.maxHp*100));
+const fill=document.getElementById("playerHPFill");
+const label=document.getElementById("playerHPText");
+if(fill){ fill.style.width=hpPercent+"%"; fill.style.background=hpPercent<=25?"#ff3030":hpPercent<=50?"#ffd83d":"#39e75f"; }
+if(label) label.textContent=`${Math.ceil(player.hp)} / ${player.maxHp} HP`;
+
+document.getElementById("hpText")
+.textContent=
+`${Math.ceil(player.hp)}/${player.maxHp}`;
+
+document.getElementById("levelText")
+.textContent=
+player.level;
+
+document.getElementById("xpText")
+.textContent=
+`${player.xp}/${player.xpNeeded}`;
+
+document.getElementById("coinText")
+.textContent=
+saveData.coins;
+
+document.getElementById("stageText")
+.textContent=
+`Level ${currentLevel}`;
+
+}
+
+
+function updateSkillUI(){
+    updateSkillButtons();
+
+
+document.getElementById("cd1")
+.textContent=
+player.skillCD1<=0
+?"READY"
+:Math.ceil(player.skillCD1/60)+"s";
+
+document.getElementById("cd2")
+.textContent=
+player.skillCD2<=0
+?"READY"
+:Math.ceil(player.skillCD2/60)+"s";
+
+document.getElementById("cd3")
+.textContent=
+selectedCharacter===1
+    ? (dukunInvincibleTimer>0
+        ? "AKTIF"
+        : (dukunImmortalCooldown<=0 ? "READY" : Math.ceil(dukunImmortalCooldown/60)+"s"))
+    : (player.skillCD3<=0
+        ?"READY"
+        :Math.ceil(player.skillCD3/60)+"s");
+
+if(selectedCharacter===1){
+    document.getElementById("cd1").textContent=dukunTuyul ? "AKTIF" : "READY";
+    document.getElementById("cd2").textContent=dukunSetaCooldown<=0 ? "READY" : Math.ceil(dukunSetaCooldown/60)+"s";
+    document.getElementById("cd3").textContent=
+        dukunInvincibleTimer>0
+        ? "AKTIF"
+        : (dukunImmortalCooldown<=0 ? "READY" : Math.ceil(dukunImmortalCooldown/60)+"s");
+}
+
+}
+
+
+/* ==================================================
+                    MESSAGE
+================================================== */
+
+let messageTimeout;
+
+function showMessage(text){
+
+const box=
+document.getElementById("message");
+
+box.textContent=text;
+
+box.style.display="block";
+
+clearTimeout(messageTimeout);
+
+messageTimeout=
+setTimeout(()=>{
+
+box.style.display="none";
+
+},1700);
+
+}
+
+
+/* ==================================================
+                    BACK MENU
+================================================== */
+
+function backToMenu(){
+
+gameRunning=false;
+
+document.getElementById("game")
+.style.display="none";
+
+document.getElementById("hud")
+.style.display="none";
+document.getElementById("playerHPBar")
+.style.display="none";
+
+document.getElementById("controls")
+.style.display="none";
+setJoystickVisible(false);
+
+showMainMenu();
+
+}
+
+
+/* ==================================================
+                    GAME LOOP
+================================================== */
+
+function gameLoop(){
+
+update();
+
+draw();
+
+requestAnimationFrame(
+gameLoop
+);
+
+}
+
+
+/* ==================================================
+                    START
+================================================== */
+
+document.getElementById(
+"menuCoins"
+).textContent=
+saveData.coins;
+
+gameLoop();
+
+</script>
+
+</body>
+</html>
